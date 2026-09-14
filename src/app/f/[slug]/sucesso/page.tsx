@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { SwRegister } from "@/components/sw-register";
 import { Cupom } from "./cupom";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,8 @@ export default async function SucessoPage({ params }: PageProps<"/f/[slug]/suces
       <Suspense>
         <Cupom slug={slug} />
       </Suspense>
+      {/* Keeps replaying the offline queue while the coupon is on screen. */}
+      <SwRegister slug={slug} />
     </main>
   );
 }

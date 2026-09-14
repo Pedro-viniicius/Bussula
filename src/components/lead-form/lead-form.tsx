@@ -156,6 +156,9 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
         /* private mode: the query string below carries the coupon */
       }
       router.push(`/f/${evento.slug}/sucesso?c=${resultado.cupom}`);
+    } catch {
+      // Unreachable server and no local queue (storage blocked): say so.
+      setErroGeral(M.erros.generico);
     } finally {
       enviandoRef.current = false;
       setEnviando(false);

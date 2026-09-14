@@ -1,20 +1,20 @@
-"use server";
-
-import { headers } from "next/headers";
 import { buscarEventoPorSlug } from "@/lib/db/queries";
 import { criarLead } from "@/lib/leads/criar-lead";
+import type { ResultadoEnvio } from "@/lib/leads/resultado";
 import { log } from "@/lib/logger";
 import { extrairIp, hashIp } from "@/lib/security/ip-hash";
 import { M } from "@/lib/texts/messages";
 import { leadSchema } from "@/lib/validation/lead";
-import type { ResultadoEnvio } from "@/components/lead-form/submit";
 
 /**
- * Server action behind the form. Never trusts the client: re-validates with
+ * Behind POST /api/f/[slug]/leads. Never trusts the client: re-validates with
  * the shared schema, resolves the seller server-side, hashes the IP.
  * Bot defence is honeypot + per-IP rate limit only (no captcha by decision).
+ *
+ * A plain route instead of a server action so the offline queue (page or
+ * service worker) can replay the exact same request later.
  */
-export async function enviarLeadAction(slug: string, input: unknown): Promise<ResultadoEnvio> {
+export async function processarEnvio(slug: string, input: unknown, h: Headers): Promise<ResultadoEnvio> {
   const parsed = leadSchema.safeParse(input);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
@@ -22,6 +22,7 @@ export async function enviarLeadAction(slug: string, input: unknown): Promise<Re
     log.warn("lead inválido", { slug, campo: String(campo), codigo: issue?.code });
     return {
       ok: false,
+      motivo: "invalido",
       erro: issue?.message ?? M.erros.generico,
       campo: campoDeFormulario(campo),
     };
@@ -36,35 +37,30 @@ export async function enviarLeadAction(slug: string, input: unknown): Promise<Re
 
   const evento = await buscarEventoPorSlug(slug);
   if (!evento || !evento.ativo) {
-    return { ok: false, erro: M.encerrado.texto };
+    return { ok: false, motivo: "encerrado", erro: M.encerrado.texto };
   }
 
-  const h = await headers();
   const contexto = {
     ipHash: hashIp(extrairIp(h)),
     userAgent: h.get("user-agent")?.slice(0, 256) ?? null,
   };
 
-  try {
-    const resultado = await criarLead(evento, dados, contexto);
-    if (resultado.status === "duplicado") {
-      return { ok: false, campo: "telefone", erro: M.erros.telefoneDuplicado, cupom: resultado.cupom };
-    }
-    if (resultado.status === "limitado") {
-      return { ok: false, erro: M.erros.limite };
-    }
-    log.info("lead gravado", {
-      slug,
-      leadId: resultado.leadId,
-      status: resultado.status,
-      origem: dados.origem,
-      vendedor: dados.vendedorCodigo,
-    });
-    return { ok: true, cupom: resultado.cupom };
-  } catch (err) {
-    log.error("falha ao gravar lead", { slug, erro: err instanceof Error ? err.message : String(err) });
-    return { ok: false, erro: M.erros.generico };
+  const resultado = await criarLead(evento, dados, contexto);
+  if (resultado.status === "duplicado") {
+    return { ok: false, motivo: "duplicado", campo: "telefone", erro: M.erros.telefoneDuplicado, cupom: resultado.cupom };
   }
+  if (resultado.status === "limitado") {
+    return { ok: false, motivo: "limitado", erro: M.erros.limite };
+  }
+  log.info("lead gravado", {
+    slug,
+    leadId: resultado.leadId,
+    status: resultado.status,
+    origem: dados.origem,
+    vendedor: dados.vendedorCodigo,
+    replay: h.get("x-fila-offline") === "1",
+  });
+  return { ok: true, cupom: resultado.cupom };
 }
 
 type CampoFormulario = "nome" | "telefone" | "email" | "consentimentos";

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { LeadForm } from "@/components/lead-form/lead-form";
+import { SwRegister } from "@/components/sw-register";
 import { buscarEventoPorSlug } from "@/lib/db/queries";
 import { M } from "@/lib/texts/messages";
 import { Encerrado } from "./encerrado";
@@ -42,6 +43,7 @@ export default async function FormularioPage({ params }: PageProps<"/f/[slug]">)
           }}
         />
       </Suspense>
+      <SwRegister slug={evento.slug} />
     </main>
   );
 }
