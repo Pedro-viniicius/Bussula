@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fiat Day — captura de leads
 
-## Getting Started
+Formulário de cadastro para o evento de 19/09/2026. Visitante encosta o cartão NFC
+ou lê o QR, preenche uma tela e recebe um cupom.
 
-First, run the development server:
+Site: https://fiat-mvp-pi.vercel.app
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+> README completo (rodar local, seed, vendedores, exportação, plano de contingência)
+> chega na etapa de hardening. Esta seção já é definitiva.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Dia do evento
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Qual banco está no ar? (5 segundos)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Cada banco Neon tem um endereço próprio, `ep-xxx.sa-east-1.aws.neon.tech`.
+O sistema imprime esse endereço (nunca a senha) em dois lugares. Se os dois
+forem iguais, terminal e site estão falando com o mesmo banco.
 
-## Learn More
+1. **O que o site está usando** — Vercel → projeto `fiat-mvp` → **Logs** →
+   pesquise `banco de dados`. A linha mostra `"host":"ep-xxx…"`. Ela é gravada
+   quando a função sobe, então se não aparecer, abra o formulário uma vez e
+   pesquise de novo.
+2. **O que o seu terminal está usando** — na pasta do projeto:
 
-To learn more about Next.js, take a look at the following resources:
+   ```bash
+   pnpm db:whoami:prod
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   Imprime `→ lendo de ep-xxx… (arquivo: .env.producao)`, os eventos, o número
+   de vendedores e de leads (com a hora do último). É só leitura e apaga o
+   arquivo de credenciais ao terminar.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Para saber a qual branch o `ep-xxx` pertence: Neon → projeto → **Branches** →
+cada branch lista o seu endpoint. `pnpm db:whoami` (sem `:prod`) mostra o banco
+do `.env` local, que deve ser a branch `dev`.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Todo script que escreve no banco (`db:seed`, `anonimizar`) começa com a linha
+`→ escrevendo em ep-xxx… (arquivo: …)`. Se o `ep-` não for o de produção quando
+deveria ser (ou for, quando não deveria), Ctrl-C.

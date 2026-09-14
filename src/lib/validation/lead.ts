@@ -47,7 +47,6 @@ export const leadSchema = z.object({
   vendedorCodigo: z.nullable(z.string().check(z.trim(), z.maxLength(10))),
   cupom: z.string().check(z.regex(/^[A-Z0-9]{2,12}-[A-Z0-9]{5}$/)),
   chaveIdempotencia: z.uuid(),
-  turnstileToken: z.nullable(z.string().check(z.maxLength(4096))),
   // Honeypot: real users never fill this.
   site: z.optional(z.string().check(z.maxLength(0))),
 });

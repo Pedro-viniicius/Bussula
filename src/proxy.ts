@@ -6,7 +6,7 @@ import type { ProxyConfig } from "next/server";
  *
  * The CSP is nonce-based: Next.js reads the `x-nonce` request header and
  * stamps the nonce on every script it injects, so no `unsafe-inline` is needed
- * for scripts. Cloudflare Turnstile is the only third-party origin allowed.
+ * for scripts. No third-party origin is allowed at all.
  */
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
@@ -15,13 +15,13 @@ export function proxy(request: NextRequest) {
   const csp = [
     "default-src 'self'",
     // 'strict-dynamic' lets nonce'd scripts load the chunks they import.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://challenges.cloudflare.com${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
     // Style attributes (React, Radix) require unsafe-inline; no inline <script> is allowed.
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",
     "connect-src 'self'",
-    "frame-src https://challenges.cloudflare.com",
+    "frame-src 'none'",
     "worker-src 'self'",
     "manifest-src 'self'",
     "form-action 'self'",

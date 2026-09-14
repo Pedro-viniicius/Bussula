@@ -6,6 +6,7 @@ import { FINALIDADES } from "@/lib/domain";
 import { registrarAuditoria } from "@/lib/admin/audit";
 import { gerarCupom } from "@/lib/coupon";
 import { log } from "@/lib/logger";
+import { verificarLimite } from "@/lib/security/rate-limit";
 import type { LeadParsed } from "@/lib/validation/lead";
 
 type Evento = { id: string; slug: string; politicaVersao: string };
@@ -13,7 +14,8 @@ type Evento = { id: string; slug: string; politicaVersao: string };
 export type ResultadoCriacao =
   | { status: "criado"; leadId: string; cupom: string }
   | { status: "repetido"; leadId: string; cupom: string }
-  | { status: "duplicado"; cupom: string | null };
+  | { status: "duplicado"; cupom: string | null }
+  | { status: "limitado" };
 
 const UNIQUE_VIOLATION = "23505";
 const TENTATIVAS_CUPOM = 3;
@@ -27,14 +29,22 @@ const TENTATIVAS_CUPOM = 3;
  * - Coupon collision → new suffix, retried a few times.
  * - Unknown/inactive seller code → vendedor_id NULL + auditoria row, so a
  *   mis-written card is visible on event day instead of silently unattributed.
+ * - Too many leads from one IP hash → "limitado", nothing written. Checked
+ *   after the idempotency lookup so a retry of a saved lead is never blocked.
  */
 export async function criarLead(
   evento: Evento,
   dados: LeadParsed,
-  contexto: { ipHash: string | null; userAgent: string | null; turnstileOk: boolean },
+  contexto: { ipHash: string | null; userAgent: string | null },
 ): Promise<ResultadoCriacao> {
   const repetido = await buscarPorChave(dados.chaveIdempotencia);
   if (repetido) return { status: "repetido", ...repetido };
+
+  const limite = await verificarLimite(contexto.ipHash);
+  if (limite) {
+    log.warn("limite de cadastros por ip atingido", { evento: evento.slug, origem: dados.origem, ...limite });
+    return { status: "limitado" };
+  }
 
   const vendedor = dados.vendedorCodigo ? await buscarVendedor(dados.vendedorCodigo) : null;
 
@@ -75,14 +85,6 @@ export async function criarLead(
             entidade: "lead",
             entidadeId: lead.id,
             metadados: { codigo: dados.vendedorCodigo, evento: evento.slug, origem: dados.origem },
-          });
-        }
-        if (!contexto.turnstileOk) {
-          await registrarAuditoria(tx, {
-            acao: "lead_sem_turnstile",
-            entidade: "lead",
-            entidadeId: lead.id,
-            metadados: { evento: evento.slug, origem: dados.origem },
           });
         }
 

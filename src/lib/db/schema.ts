@@ -65,6 +65,8 @@ export const leads = pgTable(
       .on(t.eventoId, t.telefone)
       .where(sql`${t.anonimizadoEm} IS NULL`),
     index("leads_evento_criado_idx").on(t.eventoId, t.criadoEm.desc()),
+    // Rate limit counts recent leads per hashed IP.
+    index("leads_ip_hash_criado_idx").on(t.ipHash, t.criadoEm.desc()),
   ],
 );
 

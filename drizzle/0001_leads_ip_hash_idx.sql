@@ -1,0 +1,1 @@
+CREATE INDEX "leads_ip_hash_criado_idx" ON "leads" USING btree ("ip_hash","criado_em" DESC NULLS LAST);

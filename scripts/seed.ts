@@ -10,6 +10,7 @@
  *   pnpm db:seed --force    # database already has leads and you know it
  */
 import { scriptDatabaseUrl } from "./lib/env";
+import { anunciarAlvo } from "./lib/alvo";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { count, sql } from "drizzle-orm";
 import { createPool } from "../src/lib/db/pool";
@@ -31,7 +32,9 @@ const QTD_VENDEDORES = 8;
 
 async function main() {
   const force = process.argv.includes("--force");
-  const pool = createPool(scriptDatabaseUrl());
+  const url = scriptDatabaseUrl();
+  anunciarAlvo(url);
+  const pool = createPool(url);
   const db = drizzle(pool);
 
   try {

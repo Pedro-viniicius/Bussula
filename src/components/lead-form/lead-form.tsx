@@ -77,7 +77,6 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
       vendedorCodigo,
       cupom: gerarCupom(evento.slug),
       chaveIdempotencia: crypto.randomUUID(),
-      turnstileToken: null,
       site: texto("site"),
     };
   }
@@ -126,6 +125,8 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
     setEnviando(true);
     setErroGeral(null);
     setCupomExistente(null);
+    // Kiosk mode: the previous visitor's coupon must not sit next to this one's error.
+    setUltimoCupom(null);
     try {
       const resultado = await enviarLead(evento.slug, input);
       if (!resultado.ok) {

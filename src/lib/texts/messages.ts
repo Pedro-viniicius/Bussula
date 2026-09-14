@@ -33,6 +33,7 @@ export const M = {
     consentimentoObrigatorio: "Para receber o cupom, precisamos da sua autorização de contato",
     telefoneDuplicado: "Este WhatsApp já está cadastrado neste evento. Não precisa se cadastrar de novo.",
     telefoneDuplicadoCupom: "Seu cupom continua valendo:",
+    limite: "Muitos cadastros vindos desta conexão. Aguarde um minuto e tente de novo.",
     generico: "Não foi possível enviar agora. Tente novamente em instantes.",
   },
   sucesso: {

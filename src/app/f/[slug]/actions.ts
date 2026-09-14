@@ -12,6 +12,7 @@ import type { ResultadoEnvio } from "@/components/lead-form/submit";
 /**
  * Server action behind the form. Never trusts the client: re-validates with
  * the shared schema, resolves the seller server-side, hashes the IP.
+ * Bot defence is honeypot + per-IP rate limit only (no captcha by decision).
  */
 export async function enviarLeadAction(slug: string, input: unknown): Promise<ResultadoEnvio> {
   const parsed = leadSchema.safeParse(input);
@@ -42,13 +43,15 @@ export async function enviarLeadAction(slug: string, input: unknown): Promise<Re
   const contexto = {
     ipHash: hashIp(extrairIp(h)),
     userAgent: h.get("user-agent")?.slice(0, 256) ?? null,
-    turnstileOk: true, // step 5 wires the real verification
   };
 
   try {
     const resultado = await criarLead(evento, dados, contexto);
     if (resultado.status === "duplicado") {
       return { ok: false, campo: "telefone", erro: M.erros.telefoneDuplicado, cupom: resultado.cupom };
+    }
+    if (resultado.status === "limitado") {
+      return { ok: false, erro: M.erros.limite };
     }
     log.info("lead gravado", {
       slug,

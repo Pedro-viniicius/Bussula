@@ -1,5 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Pool } from "pg";
+import { log } from "@/lib/logger";
+import { hostDoBanco } from "./host";
 import { createPool } from "./pool";
 import * as schema from "./schema";
 
@@ -14,6 +16,12 @@ if (!connectionString) {
 const globalForDb = globalThis as unknown as { pgPool?: Pool };
 
 const pool = globalForDb.pgPool ?? createPool(connectionString);
+
+// Logged once per instance so "which database is the live site on?" can be
+// answered from the Vercel logs (hostname only, never credentials).
+if (!globalForDb.pgPool) {
+  log.info("banco de dados", { host: hostDoBanco(connectionString) });
+}
 
 if (process.env.NODE_ENV !== "production") {
   globalForDb.pgPool = pool;
