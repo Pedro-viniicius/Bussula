@@ -40,16 +40,18 @@ deveria ser (ou for, quando não deveria), Ctrl-C.
 
 ## Painel (`/admin`) e demonstração (`/demo`)
 
-O acesso é por senha + código do aplicativo autenticador (TOTP). Configure, no
-`.env` local e nas variáveis do projeto na Vercel:
+O acesso é por senha + código de 6 dígitos do aplicativo autenticador (TOTP).
+Guia do operador — primeiro acesso, login diário, celular novo, rotação da
+chave — em [`docs/admin-acesso.md`](docs/admin-acesso.md). Resumo dos comandos:
 
-- `ADMIN_PASSWORD` — mínimo 16 caracteres.
-- `ADMIN_TOTP_SECRET` — gere com `pnpm totp:enroll` e cadastre a chave no
-  Google Authenticator / Authy (o comando imprime a chave e a URI `otpauth://`).
-- `SESSION_SECRET` — `openssl rand -hex 32`. Trocar este valor derruba todas as
-  sessões.
+```bash
+pnpm totp:enroll             # gera a chave TOTP (recusa se já existir)
+pnpm totp:enroll -- --rotate # troca a chave conscientemente
+pnpm totp:code               # código atual, para testar o login localmente
+```
 
-Sem `ADMIN_TOTP_SECRET` o login é recusado (nunca cai em "só senha").
+Variáveis: `ADMIN_PASSWORD` (16+), `ADMIN_TOTP_SECRET` (base32), `SESSION_SECRET`
+(`openssl rand -hex 32`). Sem qualquer uma delas o login fica fechado.
 
 ### `/demo` — painel de gestão com dados fictícios
 

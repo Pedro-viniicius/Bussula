@@ -1,10 +1,13 @@
 "use server";
 
 import { timingSafeEqual } from "node:crypto";
+import { and, count, eq, gt, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { auditoria } from "@/lib/db/schema";
 import { registrarAuditoria } from "@/lib/admin/audit";
+import { descreverProblemas, validarConfigAdmin } from "@/lib/admin/config";
 import { apagarCookieSessao, criarTokenSessao, destinoSeguro, gravarCookieSessao, sessaoAtual } from "@/lib/admin/session";
 import { verificarTotp } from "@/lib/admin/totp";
 import { log } from "@/lib/logger";
@@ -13,27 +16,55 @@ import { A } from "@/lib/texts/admin";
 
 export type EstadoLogin = { erro?: string };
 
-function senhaConfere(digitada: string): boolean {
-  const esperada = process.env.ADMIN_PASSWORD ?? "";
-  if (esperada.length < 16) return false; // misconfigured: fail closed
-  const a = Buffer.from(digitada);
-  const b = Buffer.from(esperada);
-  return a.length === b.length && timingSafeEqual(a, b);
+// Brute-force brake, counted from the audit trail itself (no extra store):
+// after this many failures in the window, every attempt is refused.
+const JANELA_MIN = 15;
+const MAX_FALHAS_POR_IP = 10;
+const MAX_FALHAS_GLOBAL = 50;
+const ATRASO_FALHA_MS = 800;
+
+function iguais(a: string, b: string): boolean {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
+
+async function falhasRecentes(ipHash: string | null): Promise<number> {
+  const desde = new Date(Date.now() - JANELA_MIN * 60_000);
+  const porIp = ipHash ? sql`${auditoria.metadados}->>'ipHash' = ${ipHash}` : sql`true`;
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(auditoria)
+    .where(and(eq(auditoria.acao, "login_falhou"), gt(auditoria.criadoEm, desde), porIp));
+  return total;
 }
 
 export async function entrarAction(_estado: EstadoLogin, form: FormData): Promise<EstadoLogin> {
   const senha = String(form.get("senha") ?? "");
-  const codigo = String(form.get("codigo") ?? "");
+  const codigo = String(form.get("codigo") ?? "").replace(/\s+/g, "");
   const next = destinoSeguro(String(form.get("next") ?? ""));
   const ipHash = hashIp(extrairIp(await headers()));
 
-  const segredoTotp = process.env.ADMIN_TOTP_SECRET;
-  if (!segredoTotp) log.error("ADMIN_TOTP_SECRET ausente: login do admin bloqueado");
+  // Fail closed: with anything missing the login never even compares.
+  const validacao = validarConfigAdmin();
+  if (!validacao.ok) {
+    log.error("login do admin bloqueado: configuração incompleta", { problemas: descreverProblemas(validacao.problemas) });
+    return { erro: A.login.naoConfigurado };
+  }
+  const { senha: senhaEsperada, segredoTotp } = validacao.config;
 
-  const ok = !!segredoTotp && senhaConfere(senha) && verificarTotp(segredoTotp, codigo);
-  if (!ok) {
-    // Slow every failure a little; the audit row is the real alarm.
-    await new Promise((r) => setTimeout(r, 800));
+  const falhas = await falhasRecentes(ipHash);
+  if (falhas >= (ipHash ? MAX_FALHAS_POR_IP : MAX_FALHAS_GLOBAL)) {
+    await registrarAuditoria(db, { acao: "login_bloqueado", entidade: "admin", metadados: { ipHash, falhas, janelaMin: JANELA_MIN } });
+    log.warn("login do admin bloqueado por excesso de tentativas", { ipHash, falhas });
+    return { erro: A.login.bloqueado(JANELA_MIN) };
+  }
+
+  // Both checks always run, so timing does not tell which one failed.
+  const senhaOk = iguais(senha, senhaEsperada);
+  const codigoOk = verificarTotp(segredoTotp, codigo);
+  if (!senhaOk || !codigoOk) {
+    await new Promise((r) => setTimeout(r, ATRASO_FALHA_MS));
     await registrarAuditoria(db, { acao: "login_falhou", entidade: "admin", metadados: { ipHash } });
     log.warn("login do admin falhou", { ipHash });
     return { erro: A.login.erro };

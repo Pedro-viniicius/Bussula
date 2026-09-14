@@ -70,6 +70,11 @@ export function verificarTotp(segredoBase32: string, codigo: string, agoraMs = D
   return ok;
 }
 
+/** Seconds left in the current 30 s step (for the operator's test script). */
+export function segundosRestantes(agoraMs = Date.now()): number {
+  return PASSO_S - (Math.floor(agoraMs / 1000) % PASSO_S);
+}
+
 export function uriOtpauth(segredoBase32: string, conta: string, emissor: string): string {
   const rotulo = encodeURIComponent(`${emissor}:${conta}`);
   return `otpauth://totp/${rotulo}?secret=${segredoBase32}&issuer=${encodeURIComponent(emissor)}&algorithm=SHA1&digits=${DIGITOS}&period=${PASSO_S}`;

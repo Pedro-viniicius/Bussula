@@ -1,14 +1,29 @@
 /** Every user-facing string of the admin area, pt-BR. */
 export const A = {
   login: {
-    titulo: "Painel do evento",
-    subtitulo: "Acesso restrito à concessionária.",
+    marca: "Fiat Day",
+    titulo: "Acesso administrativo",
+    subtitulo: "Painel do evento. Uso restrito à concessionária.",
     senha: "Senha",
     codigo: "Código do autenticador",
-    codigoAjuda: "6 dígitos do aplicativo (Google Authenticator, Authy…)",
+    codigoAjuda: "O código de 6 dígitos é gerado pelo aplicativo autenticador e muda a cada 30 segundos.",
     entrar: "Entrar",
     entrando: "Verificando…",
-    erro: "Senha ou código incorretos.",
+    erro: "Senha ou código de autenticação inválido.",
+    bloqueado: (min: number) => `Muitas tentativas. Aguarde ${min} minutos e tente de novo.`,
+    naoConfigurado: "O acesso ainda não foi configurado neste ambiente. Fale com quem administra o sistema.",
+    ajuda: {
+      titulo: "Como configurar o autenticador",
+      passos: [
+        "Abra o Google Authenticator, Authy ou outro aplicativo de códigos (TOTP).",
+        "Adicione uma nova conta.",
+        "Escolha inserir uma chave manualmente.",
+        "Nome: Fiat Day.",
+        "Chave: a ADMIN_TOTP_SECRET fornecida por quem administra o sistema.",
+        "Tipo: baseado em tempo.",
+      ],
+      rodape: "Pronto: o aplicativo passa a mostrar um código de 6 dígitos que muda a cada 30 segundos. A chave nunca aparece nesta tela.",
+    },
   },
   sair: "Sair",
   demo: {
