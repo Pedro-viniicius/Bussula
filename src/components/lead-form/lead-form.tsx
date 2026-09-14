@@ -53,6 +53,7 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [ultimoCupom, setUltimoCupom] = useState<string | null>(null);
+  const [cupomExistente, setCupomExistente] = useState<string | null>(null);
   const enviandoRef = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -124,11 +125,21 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
     enviandoRef.current = true;
     setEnviando(true);
     setErroGeral(null);
+    setCupomExistente(null);
     try {
-      const resultado = await enviarLead(input);
+      const resultado = await enviarLead(evento.slug, input);
       if (!resultado.ok) {
-        if (resultado.campo) setErros({ [resultado.campo]: resultado.erro });
-        else setErroGeral(resultado.erro);
+        if (resultado.cupom !== undefined) {
+          // Already registered: not an error on their part, so no red text.
+          setCupomExistente(resultado.cupom);
+          setErroGeral(null);
+          setErros({});
+          window.scrollTo({ top: 0 });
+        } else if (resultado.campo) {
+          setErros({ [resultado.campo]: resultado.erro });
+        } else {
+          setErroGeral(resultado.erro);
+        }
         return;
       }
       if (modoManual) {
@@ -160,6 +171,18 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
           {ultimoCupom && (
             <p role="status" className="mt-1 font-semibold">
               {M.manual.enviado} <span className="font-mono text-lg">{ultimoCupom}</span>
+            </p>
+          )}
+        </div>
+      )}
+
+      {cupomExistente !== null && (
+        <div role="status" className="rounded-lg border border-border bg-muted p-3 text-sm">
+          <p>{M.erros.telefoneDuplicado}</p>
+          {cupomExistente && (
+            <p className="mt-1 font-semibold">
+              {M.erros.telefoneDuplicadoCupom}{" "}
+              <span className="font-mono text-lg">{cupomExistente}</span>
             </p>
           )}
         </div>

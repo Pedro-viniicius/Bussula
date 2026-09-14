@@ -31,6 +31,8 @@ export const M = {
     whatsapp: "Digite um WhatsApp com DDD, por exemplo (31) 99999-9999",
     email: "Confira o e-mail digitado, parece incompleto",
     consentimentoObrigatorio: "Para receber o cupom, precisamos da sua autorização de contato",
+    telefoneDuplicado: "Este WhatsApp já está cadastrado neste evento. Não precisa se cadastrar de novo.",
+    telefoneDuplicadoCupom: "Seu cupom continua valendo:",
     generico: "Não foi possível enviar agora. Tente novamente em instantes.",
   },
   sucesso: {

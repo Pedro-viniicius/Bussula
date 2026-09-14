@@ -1,14 +1,20 @@
 import type { LeadInput } from "@/lib/validation/lead";
+import { enviarLeadAction } from "@/app/f/[slug]/actions";
 
 export type ResultadoEnvio =
   | { ok: true; cupom: string; enfileirado?: boolean }
-  | { ok: false; erro: string; campo?: "nome" | "telefone" | "email" | "consentimentos" };
+  | {
+      ok: false;
+      erro: string;
+      campo?: "nome" | "telefone" | "email" | "consentimentos";
+      /** Set when the phone is already registered: the person's existing coupon. */
+      cupom?: string | null;
+    };
 
 /**
- * Sends the lead. Step 3 stub: the server action lands in step 4 and the
- * offline queue in step 6; the form only ever talks to this function.
+ * Sends the lead. The form only ever talks to this function; the offline
+ * queue (step 6) plugs in here.
  */
-export async function enviarLead(input: LeadInput): Promise<ResultadoEnvio> {
-  await new Promise((r) => setTimeout(r, 300));
-  return { ok: true, cupom: input.cupom };
+export async function enviarLead(slug: string, input: LeadInput): Promise<ResultadoEnvio> {
+  return enviarLeadAction(slug, input);
 }
