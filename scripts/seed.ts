@@ -12,9 +12,10 @@
 import { scriptDatabaseUrl } from "./lib/env";
 import { anunciarAlvo } from "./lib/alvo";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { count, sql } from "drizzle-orm";
+import { count, eq, ne, sql } from "drizzle-orm";
 import { createPool } from "../src/lib/db/pool";
 import { eventos, leads, vendedores } from "../src/lib/db/schema";
+import { DEMO_SLUG } from "../src/lib/demo/constantes";
 import { POLITICA_VERSAO } from "../src/lib/texts/privacy";
 
 const EVENTO = {
@@ -38,7 +39,12 @@ async function main() {
   const db = drizzle(pool);
 
   try {
-    const [{ total }] = await db.select({ total: count() }).from(leads);
+    // Demo leads (pnpm db:seed:demo) are invented and never count as "real data".
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(leads)
+      .innerJoin(eventos, eq(eventos.id, leads.eventoId))
+      .where(ne(eventos.slug, DEMO_SLUG));
     if (total > 0 && !force) {
       console.error(
         `Este banco já tem ${total} lead(s). Recusando o seed. ` +

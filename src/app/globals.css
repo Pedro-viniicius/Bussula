@@ -128,3 +128,19 @@
     @apply font-sans;
   }
 }
+/* Admin + demo: pitch-deck palette. Near-black ground, white type, one red. */
+.painel {
+  --background: oklch(0.13 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.18 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.6 0 0);
+  --destaque: #e4002b;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Calibri, "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
