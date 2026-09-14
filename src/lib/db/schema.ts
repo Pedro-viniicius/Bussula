@@ -13,11 +13,9 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-export const ORIGENS = ["nfc", "qr", "manual", "direto"] as const;
-export type Origem = (typeof ORIGENS)[number];
+import { FINALIDADES, ORIGENS } from "@/lib/domain";
 
-export const FINALIDADES = ["contato_comercial", "promocao", "marketing"] as const;
-export type Finalidade = (typeof FINALIDADES)[number];
+export { FINALIDADES, ORIGENS, type Finalidade, type Origem } from "@/lib/domain";
 
 export const eventos = pgTable("eventos", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),

@@ -1,9 +1,10 @@
-// Scripts run outside Next.js, so load .env by hand (Node >= 20.12).
+// Scripts run outside Next.js, so load the env file by hand (Node >= 20.12).
+// ENV_FILE selects another file (e.g. ENV_FILE=.env.producao for production).
 // Missing file is fine: on Vercel the variables come from the environment.
 try {
-  process.loadEnvFile(".env");
+  process.loadEnvFile(process.env.ENV_FILE ?? ".env");
 } catch {
-  /* no .env file */
+  /* no env file */
 }
 
 export function requireEnv(name: string): string {
