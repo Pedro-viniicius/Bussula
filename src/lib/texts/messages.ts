@@ -22,6 +22,7 @@ export const M = {
     verPolitica: "Ler a política de privacidade completa",
     enviar: "Quero meu cupom",
     enviando: "Enviando…",
+    carregando: "Carregando…",
     obrigatorio: "obrigatório",
   },
   prazos: ["Este mês", "Em até 3 meses", "Em até 6 meses", "Só pesquisando"] as const,

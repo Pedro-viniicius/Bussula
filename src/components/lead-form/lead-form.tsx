@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, useSyncExternalStore, type FocusEvent, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { M } from "@/lib/texts/messages";
 import { leadSchema, type LeadInput } from "@/lib/validation/lead";
 import { mascararTelefone } from "@/lib/validation/phone";
 import { Chips } from "./chips";
-import { ConsentSection, type Consentimentos } from "./consent-section";
+import { ConsentSection } from "./consent-section";
 import { Field } from "./field";
 import { enviarLead } from "./submit";
 
@@ -22,18 +22,21 @@ export type EventoPublico = {
   politicaVersao: string;
 };
 
-type Erros = Partial<Record<"nome" | "telefone" | "email" | "consentimentos", string>>;
+type CampoErro = "nome" | "telefone" | "email" | "consentimentos";
+type Erros = Partial<Record<CampoErro, string>>;
 
-const CONSENTIMENTOS_VAZIOS: Consentimentos = {
-  contato_comercial: false,
-  promocao: false,
-  marketing: false,
-};
+const semAssinatura = () => () => {};
 
 function lerOrigem(valor: string | null): Origem {
   return (ORIGENS as readonly string[]).includes(valor ?? "") ? (valor as Origem) : "direto";
 }
 
+/**
+ * The whole form is uncontrolled: people start typing on a congested 4G
+ * connection long before React hydrates, and a controlled input would wipe
+ * what they typed. Values are read from FormData at submit time; React only
+ * owns error messages and the submitting state.
+ */
 export function LeadForm({ evento }: { evento: EventoPublico }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -42,12 +45,10 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
   // Kiosk mode: the salesperson types leads on their own phone, back to back.
   const modoManual = origem === "manual";
 
-  const [nome, setNome] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [email, setEmail] = useState("");
-  const [modelo, setModelo] = useState<string | null>(null);
-  const [prazo, setPrazo] = useState<string | null>(null);
-  const [consentimentos, setConsentimentos] = useState(CONSENTIMENTOS_VAZIOS);
+  // false in the server HTML, true once mounted: the submit button is visibly
+  // "Carregando…" until JavaScript can actually handle the tap.
+  const hidratado = useSyncExternalStore(semAssinatura, () => true, () => false);
+
   const [erros, setErros] = useState<Erros>({});
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -57,45 +58,42 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
 
   const modelos = [...evento.modelos, M.form.naoSei];
 
-  function montarInput(): LeadInput {
+  function lerFormulario(): LeadInput {
+    const fd = new FormData(formRef.current!);
+    const texto = (k: string) => String(fd.get(k) ?? "");
     return {
-      nome,
-      telefone,
-      email,
-      modeloInteresse: modelo,
-      prazoCompra: prazo as LeadInput["prazoCompra"],
-      consentimentos: consentimentos as LeadInput["consentimentos"],
+      nome: texto("nome"),
+      telefone: texto("telefone"),
+      email: texto("email"),
+      modeloInteresse: (fd.get("modelo") as string | null) ?? null,
+      prazoCompra: (fd.get("prazo") as LeadInput["prazoCompra"]) ?? null,
+      consentimentos: {
+        contato_comercial: fd.get("contato_comercial") === "on",
+        promocao: fd.get("promocao") === "on",
+        marketing: fd.get("marketing") === "on",
+      } as LeadInput["consentimentos"],
       origem,
       vendedorCodigo,
       cupom: gerarCupom(evento.slug),
       chaveIdempotencia: crypto.randomUUID(),
       turnstileToken: null,
-      site: (formRef.current?.elements.namedItem("site") as HTMLInputElement | null)?.value ?? "",
+      site: texto("site"),
     };
   }
 
   /** Validate one field on blur — never on every keystroke. */
-  function validarCampo(campo: keyof Erros) {
-    const shape = leadSchema.shape;
-    const valor =
-      campo === "nome" ? nome
-      : campo === "telefone" ? telefone
-      : campo === "email" ? email
-      : consentimentos;
-    const resultado = shape[campo].safeParse(valor);
-    setErros((e) => ({
-      ...e,
-      [campo]: resultado.success ? undefined : resultado.error.issues[0]?.message,
-    }));
+  function validarNoBlur(campo: "nome" | "telefone" | "email") {
+    return (e: FocusEvent<HTMLInputElement>) => {
+      const resultado = leadSchema.shape[campo].safeParse(e.target.value);
+      setErros((atual) => ({
+        ...atual,
+        [campo]: resultado.success ? undefined : resultado.error.issues[0]?.message,
+      }));
+    };
   }
 
   function limpar() {
-    setNome("");
-    setTelefone("");
-    setEmail("");
-    setModelo(null);
-    setPrazo(null);
-    setConsentimentos(CONSENTIMENTOS_VAZIOS);
+    formRef.current?.reset();
     setErros({});
     formRef.current?.querySelector<HTMLInputElement>("#nome")?.focus();
   }
@@ -105,13 +103,13 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
     // Ref, not state: state updates are async and a double tap lands before re-render.
     if (enviandoRef.current) return;
 
-    const input = montarInput();
+    const input = lerFormulario();
     const parsed = leadSchema.safeParse(input);
     if (!parsed.success) {
       const novos: Erros = {};
       for (const issue of parsed.error.issues) {
-        const campo = issue.path[0] as keyof Erros;
-        if (campo in { nome: 1, telefone: 1, email: 1, consentimentos: 1 } && !novos[campo]) {
+        const campo = issue.path[0] as CampoErro;
+        if (["nome", "telefone", "email", "consentimentos"].includes(campo) && !novos[campo]) {
           novos[campo] = issue.message;
         }
       }
@@ -152,6 +150,8 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
     }
   }
 
+  const bloqueado = !hidratado || enviando;
+
   return (
     <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-6">
       {modoManual && (
@@ -169,9 +169,7 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
         <Input
           id="nome"
           name="nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          onBlur={() => validarCampo("nome")}
+          onBlur={validarNoBlur("nome")}
           autoFocus
           autoComplete="name"
           autoCapitalize="words"
@@ -189,9 +187,11 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
           name="telefone"
           type="tel"
           inputMode="tel"
-          value={telefone}
-          onChange={(e) => setTelefone(mascararTelefone(e.target.value))}
-          onBlur={() => validarCampo("telefone")}
+          // Mask applied straight on the DOM so the input stays uncontrolled.
+          onChange={(e) => {
+            e.target.value = mascararTelefone(e.target.value);
+          }}
+          onBlur={validarNoBlur("telefone")}
           autoComplete="tel-national"
           enterKeyHint="next"
           placeholder={M.form.whatsappPlaceholder}
@@ -207,9 +207,7 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
           name="email"
           type="email"
           inputMode="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onBlur={() => validarCampo("email")}
+          onBlur={validarNoBlur("email")}
           autoComplete="email"
           autoCapitalize="none"
           enterKeyHint="done"
@@ -219,23 +217,21 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
         />
       </Field>
 
-      <Chips label={M.form.modelo} name="modelo" options={modelos} value={modelo} onChange={setModelo} />
+      <Chips label={M.form.modelo} name="modelo" options={modelos} />
 
-      <Chips label={M.form.prazo} name="prazo" options={M.prazos} value={prazo} onChange={setPrazo} />
+      <Chips label={M.form.prazo} name="prazo" options={M.prazos} />
 
       <ConsentSection
-        value={consentimentos}
-        onChange={(v) => {
-          setConsentimentos(v);
-          if (v.contato_comercial) setErros((e) => ({ ...e, consentimentos: undefined }));
-        }}
         error={erros.consentimentos}
+        onRequiredChange={(checked) => {
+          if (checked) setErros((atual) => ({ ...atual, consentimentos: undefined }));
+        }}
       />
 
       {/* Honeypot: invisible to people, tempting to bots. */}
       <div className="absolute -left-[9999px] top-0" aria-hidden="true">
         <label htmlFor="site">Site</label>
-        <input id="site" name="site" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
+        <input id="site" name="site" type="text" tabIndex={-1} autoComplete="off" />
       </div>
 
       {erroGeral && (
@@ -244,11 +240,11 @@ export function LeadForm({ evento }: { evento: EventoPublico }) {
         </p>
       )}
 
-      <Button type="submit" size="lg" className="w-full" disabled={enviando} aria-busy={enviando}>
-        {enviando ? (
+      <Button type="submit" size="lg" className="w-full" disabled={bloqueado} aria-busy={enviando}>
+        {bloqueado ? (
           <>
             <Loader2Icon className="animate-spin" aria-hidden="true" />
-            {M.form.enviando}
+            {enviando ? M.form.enviando : M.form.carregando}
           </>
         ) : (
           M.form.enviar

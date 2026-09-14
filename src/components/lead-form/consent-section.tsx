@@ -1,21 +1,19 @@
-"use client";
-
-import { Checkbox } from "@/components/ui/checkbox";
 import { CONSENTIMENTOS } from "@/lib/texts/privacy";
 import { M } from "@/lib/texts/messages";
 import type { Finalidade } from "@/lib/domain";
 
-export type Consentimentos = Record<Finalidade, boolean>;
-
 type Props = {
-  value: Consentimentos;
-  onChange: (value: Consentimentos) => void;
   error?: string | null;
+  onRequiredChange?: (checked: boolean) => void;
 };
 
 const ORDEM: Finalidade[] = ["contato_comercial", "promocao", "marketing"];
 
-export function ConsentSection({ value, onChange, error }: Props) {
+/**
+ * Native checkboxes, never pre-checked, usable before hydration.
+ * Values are read from FormData at submit time.
+ */
+export function ConsentSection({ error, onRequiredChange }: Props) {
   return (
     <fieldset className="space-y-3">
       <legend className="text-base font-medium">{M.form.consentimentos}</legend>
@@ -38,28 +36,20 @@ export function ConsentSection({ value, onChange, error }: Props) {
         const id = `consent-${finalidade}`;
         const { rotulo, obrigatorio } = CONSENTIMENTOS[finalidade];
         return (
-          <label
-            key={finalidade}
-            htmlFor={id}
-            className="flex min-h-11 cursor-pointer items-start gap-3 py-1"
-          >
-            <Checkbox
+          <label key={finalidade} htmlFor={id} className="flex min-h-11 cursor-pointer items-start gap-3 py-1">
+            <input
               id={id}
               name={finalidade}
-              checked={value[finalidade]}
-              onCheckedChange={(checked) =>
-                onChange({ ...value, [finalidade]: checked === true })
-              }
+              type="checkbox"
+              className="mt-0.5 size-6 shrink-0 accent-primary"
               aria-required={obrigatorio}
               aria-invalid={obrigatorio && !!error}
               aria-describedby={obrigatorio && error ? `${id}-erro` : undefined}
-              className="mt-0.5"
+              onChange={obrigatorio ? (e) => onRequiredChange?.(e.target.checked) : undefined}
             />
             <span className="text-sm leading-snug">
               {rotulo}{" "}
-              {obrigatorio && (
-                <span className="text-muted-foreground">({M.form.obrigatorio})</span>
-              )}
+              {obrigatorio && <span className="text-muted-foreground">({M.form.obrigatorio})</span>}
             </span>
           </label>
         );
