@@ -162,8 +162,8 @@
   }
 }
 /* Painel Essencial Fit: contraste alto, verde profundo e acento energético.
-   Todo texto secundário usa --muted-foreground (≈ 8:1 sobre o fundo); branco
-   com transparência abaixo de 70% não passa no AA e não é usado em texto. */
+   Texto secundário usa --muted-foreground (8,8:1 sobre o cartão). Branco
+   transparente não serve: a 40% fica em 3,2:1 e reprova no WCAG AA. */
 .painel {
   --background: oklch(0.19 0.045 165);
   --foreground: oklch(0.985 0 0);
