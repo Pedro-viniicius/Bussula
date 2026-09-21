@@ -129,14 +129,14 @@ export function CartaoFisico({ empresa, instrucao, codigo, className, compacto }
         <div className="flex items-start justify-between">
           <div>
             <p className={cn("font-semibold tracking-tight", compacto ? "text-sm" : "text-base")}>{empresa}</p>
-            <p className={cn("mt-0.5 text-white/60", compacto ? "text-[10px]" : "text-xs")}>{SITE.nome}</p>
+            <p className={cn("mt-0.5 text-white/70", compacto ? "text-[10px]" : "text-xs")}>{SITE.nome}</p>
           </div>
           <SimboloNfc className={compacto ? "size-5" : "size-7"} />
         </div>
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
             <p className={cn("font-medium leading-tight", compacto ? "text-xs" : "text-sm")}>{instrucao}</p>
-            {codigo && <p className={cn("mt-1 font-mono text-white/50", compacto ? "text-[10px]" : "text-xs")}>{codigo}</p>}
+            {codigo && <p className={cn("mt-1 font-mono text-white/70", compacto ? "text-[10px]" : "text-xs")}>{codigo}</p>}
           </div>
           <QrIlustrativo className={compacto ? "size-9" : "size-14"} />
         </div>
