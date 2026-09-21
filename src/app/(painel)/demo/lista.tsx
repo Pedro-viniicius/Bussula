@@ -20,7 +20,9 @@ const FUSO = "America/Sao_Paulo";
 const hora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: FUSO });
 const select =
   "min-h-11 w-full rounded-lg border border-border bg-muted px-3 text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
-const COLUNAS = "md:grid-cols-[1.7fr_1.2fr_0.9fr_1.4fr_0.5fr]";
+// A tabela em colunas só abre no desktop: em 768px os consentimentos
+// quebravam em duas linhas e a altura da linha dobrava.
+const COLUNAS = "lg:grid-cols-[1.7fr_1.2fr_0.9fr_1.4fr_0.5fr]";
 
 export function Lista({ itens, total, paginas, filtros, opcoes }: Props) {
   const T = A.demo.lista;
@@ -111,11 +113,11 @@ export function Lista({ itens, total, paginas, filtros, opcoes }: Props) {
         </EstadoVazio>
       ) : (
         <ul className="divide-y divide-border border-y border-border">
-          <li className={cn("hidden py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase md:grid md:gap-4", COLUNAS)}>
+          <li className={cn("hidden py-2 text-xs font-medium tracking-wide text-muted-foreground uppercase lg:grid lg:gap-4", COLUNAS)}>
             <span>{T.colunas.contato}</span><span>{T.colunas.interesse}</span><span>{T.colunas.vendedor}</span><span>{T.colunas.consentimentos}</span><span className="text-right">{T.colunas.hora}</span>
           </li>
           {itens.map((l) => (
-            <li key={l.id} className={cn("grid grid-cols-1 gap-2 py-4 md:items-center md:gap-4 md:py-3", COLUNAS)}>
+            <li key={l.id} className={cn("grid grid-cols-1 gap-2 py-4 lg:items-center lg:gap-4 lg:py-3", COLUNAS)}>
               <div className="flex items-start gap-2">
                 <div className="min-w-0 flex-1"><LinhaContato id={l.id} nome={l.nome} telefone={l.telefone} email={l.email} /></div>
                 {l.suspeito && <Etiqueta tom="atencao" className="shrink-0">{T.suspeito}</Etiqueta>}
@@ -143,7 +145,7 @@ export function Lista({ itens, total, paginas, filtros, opcoes }: Props) {
                 })}
                 {!l.consentimentos.marketing && <span className="text-xs font-medium text-perigo">{T.naoContatar}</span>}
               </div>
-              <div className="text-sm text-muted-foreground tabular-nums md:text-right">
+              <div className="text-sm text-muted-foreground tabular-nums lg:text-right">
                 <Rotulo>{T.colunas.hora}</Rotulo>
                 {hora.format(l.criadoEm)}
               </div>
@@ -169,7 +171,7 @@ export function Lista({ itens, total, paginas, filtros, opcoes }: Props) {
 
 /** Rótulo da coluna repetido no celular, onde o cabeçalho da tabela não existe. */
 function Rotulo({ children }: { children: string }) {
-  return <span className="mr-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase md:hidden">{children}</span>;
+  return <span className="mr-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase lg:hidden">{children}</span>;
 }
 
 function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {

@@ -53,34 +53,29 @@ type BarrasProps = {
 export function Barras({ itens, destacarPrimeiro = false, lado = false }: BarrasProps) {
   const max = Math.max(1, ...itens.map((i) => i.total));
   return (
-    <ul className={lado ? "space-y-2.5" : "space-y-3"}>
+    <ul className="space-y-3">
       {itens.map((i, idx) => {
         const lider = destacarPrimeiro && idx === 0;
         const cor = lider ? "bg-destaque" : i.apagado ? "bg-muted-foreground/60" : "bg-foreground/80";
-        const rotulo = cn("truncate", lider ? "font-semibold text-foreground" : i.apagado ? "text-muted-foreground" : "text-foreground/90");
-        const valor = cn("tabular-nums", lider ? "font-semibold" : "text-muted-foreground");
-        const barra = (alt: string) => (
-          <span className={`block w-full ${alt}`}>
-            <span className={cn("block h-full rounded-r", cor)} style={{ width: `${(i.total / max) * 100}%` }} />
-          </span>
-        );
-        return lado ? (
+        return (
           <li
             key={i.rotulo}
-            className="grid grid-cols-[minmax(0,6.5rem)_1fr_2.5rem] items-center gap-2 sm:grid-cols-[minmax(0,10rem)_1fr_3rem] sm:gap-3"
             title={`${i.rotulo}: ${i.total}`}
+            className={cn(lado && "sm:grid sm:grid-cols-[minmax(0,12rem)_1fr_3rem] sm:items-center sm:gap-3")}
           >
-            <span className={`${rotulo} text-sm sm:text-lg`}>{i.rotulo}</span>
-            {barra("h-5")}
-            <span className={`${valor} text-right text-sm sm:text-lg`}>{i.total}</span>
-          </li>
-        ) : (
-          <li key={i.rotulo} title={`${i.rotulo}: ${i.total}`}>
-            <div className="mb-1 flex items-baseline justify-between gap-3 text-sm sm:text-lg">
-              <span className={rotulo}>{i.rotulo}</span>
-              <span className={valor}>{i.total}</span>
+            {/* No celular o rótulo ocupa a linha inteira e não precisa ser cortado;
+                a partir de sm ele volta a ser a primeira coluna da barra. */}
+            <div className={cn("mb-1 flex items-baseline justify-between gap-3 text-sm sm:text-base", lado && "sm:contents")}>
+              <span className={cn(lider ? "font-semibold text-foreground" : i.apagado ? "text-muted-foreground" : "text-foreground/90", lado && "sm:order-1 sm:truncate sm:text-lg")}>
+                {i.rotulo}
+              </span>
+              <span className={cn("tabular-nums", lider ? "font-semibold" : "text-muted-foreground", lado && "sm:order-3 sm:text-right sm:text-lg")}>
+                {i.total}
+              </span>
             </div>
-            {barra("h-3")}
+            <span className={cn("block h-3 w-full", lado && "sm:order-2 sm:h-5")}>
+              <span className={cn("block h-full rounded-r", cor)} style={{ width: `${(i.total / max) * 100}%` }} />
+            </span>
           </li>
         );
       })}
