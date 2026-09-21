@@ -1,11 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
+import { Aviso } from "@/components/painel/primitivos";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { A } from "@/lib/texts/admin";
 import { entrarAction, type EstadoLogin } from "./actions";
-
-const campo =
-  "mt-1.5 block w-full rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-lg text-white placeholder:text-white/25 focus:border-white/50 focus:outline-none disabled:opacity-50";
 
 /**
  * Password + 6-digit code. The code field opens the numeric keyboard and
@@ -22,32 +23,26 @@ export function LoginForm({ next, configurado }: { next: string; configurado: bo
       <form action={agir} className="space-y-5" aria-busy={pendente}>
         <input type="hidden" name="next" value={next} />
         <header>
-          <p className="text-xs font-medium tracking-widest text-white/50 uppercase">{L.marca}</p>
-          <h1 className="text-3xl font-bold tracking-tight text-white">{L.titulo}</h1>
-          <p className="mt-1 text-white/60">{L.subtitulo}</p>
+          <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">{L.marca}</p>
+          <h1 className="text-3xl font-bold tracking-tight">{L.titulo}</h1>
+          <p className="mt-1 text-muted-foreground">{L.subtitulo}</p>
         </header>
 
         {!configurado && (
-          <p role="status" className="rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-sm text-amber-100">
+          <Aviso tom="atencao" role="status" className="text-atencao">
             {L.naoConfigurado}
-          </p>
+          </Aviso>
         )}
 
-        <label className="block">
-          <span className="text-sm font-medium text-white/80">{L.senha}</span>
-          <input
-            name="senha"
-            type="password"
-            autoComplete="current-password"
-            required
-            disabled={bloqueado}
-            className={campo}
-          />
-        </label>
+        <div className="space-y-1.5">
+          <Label htmlFor="senha">{L.senha}</Label>
+          <Input id="senha" name="senha" type="password" autoComplete="current-password" required disabled={bloqueado} />
+        </div>
 
-        <label className="block">
-          <span className="text-sm font-medium text-white/80">{L.codigo}</span>
-          <input
+        <div className="space-y-1.5">
+          <Label htmlFor="codigo">{L.codigo}</Label>
+          <Input
+            id="codigo"
             name="codigo"
             type="text"
             inputMode="numeric"
@@ -56,32 +51,28 @@ export function LoginForm({ next, configurado }: { next: string; configurado: bo
             maxLength={6}
             required
             disabled={bloqueado}
-            placeholder="______"
+            placeholder="······"
             aria-describedby="codigo-ajuda"
-            className={`${campo} text-center font-mono text-2xl tracking-[0.5em]`}
+            className="text-center font-mono text-2xl tracking-[0.4em]"
           />
-          <span id="codigo-ajuda" className="mt-1.5 block text-sm leading-snug text-white/50">
+          <p id="codigo-ajuda" className="text-sm leading-snug text-muted-foreground">
             {L.codigoAjuda}
-          </span>
-        </label>
+          </p>
+        </div>
 
         {estado.erro && (
-          <p role="alert" className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-200">
+          <Aviso tom="perigo" role="alert" className="font-medium text-perigo">
             {estado.erro}
-          </p>
+          </Aviso>
         )}
 
-        <button
-          type="submit"
-          disabled={bloqueado}
-          className="min-h-14 w-full rounded-lg bg-white text-lg font-semibold text-black transition-colors hover:bg-white/90 disabled:opacity-60"
-        >
+        <Button type="submit" size="lg" className="w-full" disabled={bloqueado} aria-busy={pendente}>
           {pendente ? L.entrando : L.entrar}
-        </button>
+        </Button>
       </form>
 
-      <details className="rounded-lg border border-white/10 px-4 py-3 text-sm text-white/70">
-        <summary className="min-h-11 cursor-pointer list-none py-2 font-medium text-white/80 marker:hidden">
+      <details className="rounded-lg border border-border px-4 py-3 text-sm text-muted-foreground">
+        <summary className="min-h-11 cursor-pointer list-none py-2 font-medium text-foreground marker:hidden">
           {L.ajuda.titulo}
         </summary>
         <ol className="mt-2 list-decimal space-y-1.5 pl-5">
@@ -89,7 +80,7 @@ export function LoginForm({ next, configurado }: { next: string; configurado: bo
             <li key={p}>{p}</li>
           ))}
         </ol>
-        <p className="mt-3 text-xs text-white/45">{L.ajuda.rodape}</p>
+        <p className="mt-3 text-xs">{L.ajuda.rodape}</p>
       </details>
     </div>
   );
