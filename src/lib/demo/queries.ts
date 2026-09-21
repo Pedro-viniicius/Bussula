@@ -12,7 +12,7 @@ import { mascararEmail, mascararNome, mascararTelefone } from "./mascara";
  */
 const FUSO = "America/Sao_Paulo";
 export const TAMANHO_PAGINA = 20;
-export const PRAZOS_ATE_3_MESES = ["Este mês", "Em até 3 meses"];
+export const PRAZOS_ATE_3_MESES = ["Hoje", "Nos próximos 30 dias"];
 
 export async function eventoDemo() {
   const [e] = await db
@@ -27,7 +27,7 @@ export async function resumo(eventoId: string) {
   const [r] = await db
     .select({
       total: count(),
-      ate3Meses: sql<number>`count(*) filter (where ${leads.prazoCompra} in ('Este mês', 'Em até 3 meses'))`.mapWith(Number),
+      ate3Meses: sql<number>`count(*) filter (where ${leads.prazoCompra} in ('Hoje', 'Nos próximos 30 dias'))`.mapWith(Number),
       comVendedor: sql<number>`count(*) filter (where ${leads.vendedorId} is not null)`.mapWith(Number),
       vendedores: sql<number>`count(distinct ${leads.vendedorId})`.mapWith(Number),
     })
