@@ -36,6 +36,11 @@ export function FormularioPublicoInterativo({
   const router = useRouter();
   const [posicao, setPosicao] = useState(0);
   const [valores, setValores] = useState<Record<string, ValorDaResposta>>({});
+  // As respostas também numa ref, e é ela que os manipuladores leem. Um toque
+  // na opção seguido de um toque em "Continuar" acontece antes do re-render, e
+  // o estado ainda traria o valor anterior — a pessoa veria "responda esta
+  // pergunta" logo depois de responder.
+  const respondido = useRef<Record<string, ValorDaResposta>>({});
   const [erro, setErro] = useState<string | null>(null);
   const [estado, setEstado] = useState<EstadoDoEnvio>("PREENCHENDO");
   const relogio = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -49,12 +54,22 @@ export function FormularioPublicoInterativo({
   const ultima = posicao === formulario.perguntas.length - 1;
   const total = formulario.perguntas.length;
 
+  /** Cancela um avanço automático que esteja a caminho. */
+  function cancelarAvancoAutomatico() {
+    if (relogio.current) clearTimeout(relogio.current);
+    relogio.current = null;
+  }
+
   function responder(valor: ValorDaResposta, respostaDefinitiva: boolean) {
-    setValores((atuais) => ({ ...atuais, [pergunta.id]: valor }));
+    respondido.current = { ...respondido.current, [pergunta.id]: valor };
+    setValores(respondido.current);
     setErro(null);
+    cancelarAvancoAutomatico();
     if (respostaDefinitiva && !ultima) {
-      if (relogio.current) clearTimeout(relogio.current);
-      relogio.current = setTimeout(() => setPosicao((p) => p + 1), ESPERA_ANTES_DE_AVANCAR_MS);
+      relogio.current = setTimeout(() => {
+        relogio.current = null;
+        setPosicao((p) => p + 1);
+      }, ESPERA_ANTES_DE_AVANCAR_MS);
     }
   }
 
@@ -62,16 +77,21 @@ export function FormularioPublicoInterativo({
     // Dois toques rápidos no mesmo botão não devem virar dois envios. O botão
     // já fica desabilitado, mas o estado é quem manda.
     if (!podeEnviar(estado)) return;
-    const problema = validarResposta(pergunta, valores[pergunta.id] ?? null);
+    // Tocar numa opção agenda o avanço automático. Se a pessoa tocar em
+    // "Continuar" antes de ele disparar, os dois avançariam e uma pergunta
+    // passaria batida: o agendado é cancelado aqui.
+    cancelarAvancoAutomatico();
+    const problema = validarResposta(pergunta, respondido.current[pergunta.id] ?? null);
     if (problema) {
       setErro(problema);
       return;
     }
-    if (ultima) void enviar({ ...valores });
+    if (ultima) void enviar({ ...respondido.current });
     else setPosicao((p) => p + 1);
   }
 
   function voltar() {
+    cancelarAvancoAutomatico();
     setErro(null);
     setPosicao((p) => Math.max(0, p - 1));
   }

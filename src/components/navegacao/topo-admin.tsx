@@ -9,9 +9,10 @@ import { sairAction } from "@/app/(painel)/admin/login/actions";
  * A barra que acompanha todas as telas do painel.
  *
  * A área em que se está é marcada de três formas ao mesmo tempo — peso da
- * fonte, fundo e `aria-current` —, porque só a cor não seria lida por todo
- * mundo. No celular a lista rola de lado em vez de virar um menu escondido:
- * são quatro itens, e escondê-los custaria um toque a mais em tudo.
+ * fonte, sublinhado e `aria-current` —, porque só a cor não seria lida por
+ * todo mundo. No celular os itens quebram para a linha de baixo em vez de
+ * rolarem de lado: rolagem lateral sem aviso esconde o quarto item de quem
+ * não souber que ela existe.
  */
 export type AreaDoPainel = "visao-geral" | "formularios" | "novo-formulario" | "respostas";
 
@@ -43,7 +44,7 @@ export function TopoAdmin({ atual }: { atual: AreaDoPainel }) {
       </Container>
 
       <nav aria-label={A.nav.areas} className="border-t border-border">
-        <Container className="flex gap-1 overflow-x-auto">
+        <Container className="flex flex-wrap gap-x-1">
           {AREAS.map((area) => {
             const ativa = area.chave === atual;
             return (
