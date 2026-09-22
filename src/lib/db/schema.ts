@@ -13,6 +13,9 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import { SITUACOES_DO_FORMULARIO } from "@/dominio/formularios/status";
+import type { Pergunta, ValorDaResposta } from "@/dominio/formularios/perguntas";
+import { ORIGENS_DA_RESPOSTA } from "@/dominio/respostas/tipos";
 import { FINALIDADES, ORIGENS } from "@/lib/domain";
 
 export { FINALIDADES, ORIGENS, type Finalidade, type Origem } from "@/lib/domain";
@@ -108,6 +111,68 @@ export const solicitacoesContato = pgTable(
   },
   (t) => [index("solicitacoes_contato_ip_hash_criado_idx").on(t.ipHash, t.criadoEm.desc())],
 );
+
+/* ------------------------------------------------------------------ *
+ * Formulários: o centro do produto.                                   *
+ *                                                                     *
+ * `formularios` guarda a identidade (nome, link, situação) e          *
+ * `versoes_formulario` guarda as perguntas de cada publicação. Uma    *
+ * resposta aponta para a versão em que foi dada, então mudar uma      *
+ * pergunta hoje não reescreve o sentido do que foi respondido ontem.  *
+ * ------------------------------------------------------------------ */
+
+export const formularios = pgTable(
+  "formularios",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    // Vai na URL pública e, por isso, no cartão NFC e no QR Code.
+    slug: text("slug").unique().notNull(),
+    nome: text("nome").notNull(),
+    descricao: text("descricao"),
+    situacao: text("situacao", { enum: SITUACOES_DO_FORMULARIO }).notNull().default("RASCUNHO"),
+    versaoAtual: integer("versao_atual").notNull().default(1),
+    criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
+    atualizadoEm: timestamp("atualizado_em", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("formularios_situacao_idx").on(t.situacao)],
+);
+
+export const versoesFormulario = pgTable(
+  "versoes_formulario",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    formularioId: uuid("formulario_id")
+      .notNull()
+      .references(() => formularios.id, { onDelete: "cascade" }),
+    versao: integer("versao").notNull(),
+    // As perguntas congeladas desta publicação; o formato vive em src/dominio.
+    perguntas: jsonb("perguntas").$type<Pergunta[]>().notNull().default([]),
+    criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("versoes_formulario_uk").on(t.formularioId, t.versao)],
+);
+
+export const respostas = pgTable(
+  "respostas",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    formularioId: uuid("formulario_id")
+      .notNull()
+      .references(() => formularios.id, { onDelete: "cascade" }),
+    versaoFormulario: integer("versao_formulario").notNull(),
+    // Gerada no navegador. O índice único é o que impede que uma retentativa
+    // de rede vire uma segunda resposta.
+    chaveEnvio: uuid("chave_envio").unique().notNull(),
+    valores: jsonb("valores").$type<Record<string, ValorDaResposta>>().notNull().default({}),
+    origem: text("origem", { enum: ORIGENS_DA_RESPOSTA }).notNull().default("link"),
+    criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("respostas_formulario_criado_idx").on(t.formularioId, t.criadoEm.desc())],
+);
+
+export type FormularioGravado = typeof formularios.$inferSelect;
+export type VersaoFormularioGravada = typeof versoesFormulario.$inferSelect;
+export type RespostaGravada = typeof respostas.$inferSelect;
 
 export type Evento = typeof eventos.$inferSelect;
 export type Vendedor = typeof vendedores.$inferSelect;
