@@ -1,112 +1,89 @@
-# Essencial Fit — experiência NFC + QR Code
+# Essencial Fit — coleta e análise da experiência dos clientes
 
-Experiência física → digital da Essencial Fit: cartões NFC + QR Code, coleta
-estruturada, painel e leitura dos sinais deixados pelas pessoas. Este repositório
-reúne a apresentação (`/`) e a captura pública (`/f/essencial-fit`).
+Sistema operacional da Essencial Fit. Faz um fluxo só, do começo ao fim:
 
-## Rodar só para ver as telas
-
-```bash
-pnpm install && pnpm dev   # http://localhost:3000
+```
+CRIAR → PUBLICAR → COLETAR → ENTENDER
 ```
 
-Sem `.env`, sem banco, sem serviço externo: o modo de teste atende tudo com
-dados fictícios em memória e o `/admin/login` ganha um botão de entrada direta.
-Como desligar e o que configurar para valer: [MOCKS.md](MOCKS.md).
+A equipe cria um formulário no painel. O endereço público dele é gravado num
+cartão NFC ou vira um QR Code. O cliente encosta o celular, responde em alguns
+segundos, e a resposta aparece no painel virada em informação.
 
-## Landing (`/`)
+Não é um site institucional e não tem página de vendas.
 
-Página única, estática, em pt-BR: hero com demonstração animada (toque →
-página → resposta → registro → indicador), seletor "Um cartão. Infinitas
-funções.", fluxo físico → dado → decisão, aplicações, personalização, painel
-de exemplo (dados ilustrativos, sinalizados), IA como camada de interpretação,
-privacidade/LGPD, preço inicial, FAQ e formulário de contato.
-
-- Copy e dados de exemplo: `src/lib/site/conteudo.ts` (um arquivo, revisável de uma vez).
-- Componentes: `src/components/site/`. Só três são client components (demonstração
-  do hero, seletor de funções, menu de celular) mais o formulário de contato.
-- Tokens visuais e animações: `src/app/globals.css`, escopo `.site` (verde profundo,
-  acento energético e neutros quentes; `prefers-reduced-motion` desliga tudo).
-- Formulário de contato: server action em `src/components/site/contato/actions.ts`,
-  grava em `solicitacoes_contato` (migração `drizzle/0002`), 3 envios/hora por IP
-  (hash), campo-isca contra robôs, texto de consentimento versionado. A página
-  renderiza sem banco; só o envio precisa de `DATABASE_URL`.
-- SEO: `robots index` apenas na landing (o restante segue `noindex`), canonical e
-  OpenGraph a partir de `NEXT_PUBLIC_SITE_URL`, imagem em `src/app/opengraph-image.tsx`,
-  FAQ em JSON-LD.
-
-## Essencial Fit — captura pública (`/f/essencial-fit`)
-
-Formulário curto da Essencial Fit. A pessoa encosta o celular no cartão NFC ou lê
-o QR Code, responde sobre seu interesse e recebe a confirmação da participação.
-
-Site configurado por `NEXT_PUBLIC_SITE_URL`.
-
-> README completo (rodar local, seed, vendedores, exportação, plano de contingência)
-> chega na etapa de hardening. Esta seção já é definitiva.
-
-## Dia do evento
-
-### Qual banco está no ar? (5 segundos)
-
-Cada banco Neon tem um endereço próprio, `ep-xxx.sa-east-1.aws.neon.tech`.
-O sistema imprime esse endereço (nunca a senha) em dois lugares. Se os dois
-forem iguais, terminal e site estão falando com o mesmo banco.
-
-1. **O que o site está usando** — Vercel → projeto da Essencial Fit → **Logs** →
-   pesquise `banco de dados`. A linha mostra `"host":"ep-xxx…"`. Ela é gravada
-   quando a função sobe, então se não aparecer, abra o formulário uma vez e
-   pesquise de novo.
-2. **O que o seu terminal está usando** — na pasta do projeto:
-
-   ```bash
-   pnpm db:whoami:prod
-   ```
-
-   Imprime `→ lendo de ep-xxx… (arquivo: .env.producao)`, os eventos, o número
-   de vendedores e de leads (com a hora do último). É só leitura e apaga o
-   arquivo de credenciais ao terminar.
-
-Para saber a qual branch o `ep-xxx` pertence: Neon → projeto → **Branches** →
-cada branch lista o seu endpoint. `pnpm db:whoami` (sem `:prod`) mostra o banco
-do `.env` local, que deve ser a branch `dev`.
-
-Todo script que escreve no banco (`db:seed`, `anonimizar`) começa com a linha
-`→ escrevendo em ep-xxx… (arquivo: …)`. Se o `ep-` não for o de produção quando
-deveria ser (ou for, quando não deveria), Ctrl-C.
-
-## Painel (`/admin`) e demonstração (`/demo`)
-
-O acesso é por senha + código de 6 dígitos do aplicativo autenticador (TOTP).
-Guia do operador — primeiro acesso, login diário, celular novo, rotação da
-chave — em [`docs/admin-acesso.md`](docs/admin-acesso.md). Resumo dos comandos:
+## Rodar
 
 ```bash
-pnpm totp:enroll             # gera a chave TOTP (recusa se já existir)
-pnpm totp:enroll -- --rotate # troca a chave conscientemente
-pnpm totp:code               # código atual, para testar o login localmente
+pnpm install
+pnpm dev
 ```
 
-Variáveis: `ADMIN_PASSWORD` (16+), `ADMIN_TOTP_SECRET` (base32), `SESSION_SECRET`
-(`openssl rand -hex 32`). Sem qualquer uma delas o login fica fechado.
+Abra **http://localhost:3000** — use `localhost`, não `127.0.0.1`.
 
-### `/demo` — painel de gestão com dados fictícios
+Nenhum arquivo `.env` é necessário: o projeto sobe em modo de teste, com
+formulários e respostas fictícios em memória, e o login do painel ganha um
+botão de entrada direta. Veja [MOCKS.md](MOCKS.md) para desligar isso e usar
+os serviços de verdade.
 
-Mostra ao cliente o que o painel faz com os dados capturados, usando um evento
-inventado (`slug = demo`, sempre inativo, nunca recebe cadastros reais):
+## Endereços
 
-```bash
-pnpm db:seed:demo             # cria o evento demo com ~220 cadastros inventados
-pnpm db:seed:demo --purge     # apaga o evento demo e tudo que pertence a ele
-pnpm db:seed:demo:prod        # o mesmo, contra a produção (pede confirmação visual do host)
-```
+| Endereço | O que é |
+| --- | --- |
+| `/` | Página de acesso |
+| `/admin/login` | Entrada do painel (senha + código do autenticador) |
+| `/admin` | Visão geral da coleta |
+| `/admin/formularios` | Lista de formulários |
+| `/admin/formularios/novo` | Criar formulário |
+| `/admin/formularios/[id]` | Um formulário: link público, situação e resultados |
+| `/admin/formularios/[id]/editar` | Editar formulário |
+| `/admin/respostas` | Todas as respostas, com filtro por formulário |
+| `/f/[slug]` | O formulário que o cliente abre pelo NFC ou QR Code |
+| `/resposta/concluida` | Confirmação para quem respondeu |
+| `/privacidade` | Política em linguagem clara |
 
-Nomes, telefones (`(DD) 90xxx-xxxx`, faixa que a Anatel não atribui) e e-mails
-(`@example.com`) são gerados; nenhum dado real aparece na tela. Todas as
-consultas são filtradas pelo evento demo — a URL só carrega filtros da lista.
+O formulário público não depende do painel: abre, funciona e envia sozinho.
 
-O que a tela demonstra de LGPD: dados pessoais mascarados por padrão; "Revelar"
-grava `auditoria.acao = 'dado_revelado'`; a exportação CSV só inclui quem
-consentiu marketing (o contrário exige marcar a opção explicitamente) e grava
-`auditoria.acao = 'exportacao'`; quem não consentiu marketing aparece como "Não
-contatar por campanha"; o prazo de anonimização fica visível.
+## Como o sistema é organizado
+
+[docs/estrutura-do-projeto.md](docs/estrutura-do-projeto.md) explica o que cada
+pasta faz e o que **não** deve ser colocado nela. Escrito para quem não é
+desenvolvedor.
+
+O resumo: `dominio` define, `servicos` decide, `repositorios` guarda,
+`validacoes` confere, `components` desenha, `app` são os endereços.
+
+## Coisas que valem saber
+
+**Editar um formulário publicado cria uma versão nova.** As respostas já
+recebidas continuam apontando para a versão em que foram dadas, então uma
+resposta de março continua legível depois de a pergunta mudar em junho.
+
+**Enviar duas vezes não cria duas respostas.** Cada preenchimento tem uma chave
+própria; o servidor reconhece a repetição e devolve a resposta original.
+
+**Uma resposta não se perde por falta de sinal.** Se o envio não chegar, ela
+fica guardada no próprio aparelho e parte sozinha quando a conexão voltar — e
+continua tentando mesmo com a aba fechada, onde o navegador permite.
+
+**Nenhum número do painel é gravado.** Tudo é contado a partir das respostas no
+momento da consulta, então não existe indicador que possa discordar do que os
+clientes responderam.
+
+## Acesso administrativo
+
+Senha forte + código de 6 dígitos de um aplicativo autenticador (TOTP). Veja
+[docs/admin-acesso.md](docs/admin-acesso.md) para configurar.
+
+## Comandos
+
+| Comando | Para quê |
+| --- | --- |
+| `pnpm dev` | Roda o projeto localmente |
+| `pnpm build` | Compila para produção |
+| `pnpm typecheck` | Confere os tipos |
+| `pnpm lint` | Confere o estilo do código |
+| `pnpm test` | Roda os testes |
+| `pnpm db:generate` | Cria uma migração a partir do schema |
+| `pnpm db:migrate` | Aplica as migrações pendentes |
+| `pnpm totp:enroll` | Gera a chave do autenticador do painel |

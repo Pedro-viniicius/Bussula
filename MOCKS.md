@@ -30,34 +30,40 @@ sobrescreve o que você definiu.
 
 | Tela | Endereço | O que dá para testar |
 | --- | --- | --- |
-| Landing | `/` | Narrativa, preço, FAQ e o formulário de contato (envia de verdade, para a memória) |
-| Captura pública | `/f/essencial-fit` | Formulário completo, validação, cupom, duplicado, evento encerrado |
-| Modo atendimento | `/f/essencial-fit?o=manual&v=03` | Balcão: o formulário volta em branco para a próxima pessoa |
-| Evento encerrado | `/f/demo` | Estado de evento inativo |
-| Privacidade | `/privacidade` | Texto da política |
+| Acesso | `/` | A porta de entrada do sistema |
 | Login do painel | `/admin/login` | Botão **Entrar como usuário de teste** (ou qualquer senha e qualquer código) |
-| Painel | `/admin` | Estado vazio do painel real |
-| Demonstração | `/demo` | Atenção, indicadores, gráficos, lista com filtros, revelar, exportar CSV |
+| Visão geral | `/admin` | Indicadores, sinais, respostas por dia e respostas recentes |
+| Formulários | `/admin/formularios` | Lista, situações, link público, ativar e desativar |
+| Novo formulário | `/admin/formularios/novo` | Criar, escrever perguntas, reordenar, publicar |
+| Resultados | `/admin/formularios/<id>` | Distribuição de cada pergunta e respostas em texto |
+| Respostas | `/admin/respostas` | Lista completa, filtro por formulário e paginação |
+| Formulário público | `/f/experiencia-na-loja` | Cinco perguntas, uma por vez, envio e confirmação |
+| Formulário pausado | `/f/pos-venda` | O aviso que o cliente vê quando o formulário não está ativo |
+| Endereço inexistente | `/f/nao-existe` | O aviso de formulário não encontrado |
+| Privacidade | `/privacidade` | Texto da política |
 
 ## O que está fictício
 
 | Serviço real | No modo de teste | Onde |
 | --- | --- | --- |
-| Postgres/Neon via Drizzle | Arrays em memória | `src/lib/mock/loja.ts` |
-| Consultas do painel (`/demo`) | Mesmo formato, mesma ordenação, dados inventados | `src/lib/demo/queries.ts` |
-| Evento do formulário público | Dois eventos fixos: `essencial-fit` (aberto) e `demo` (encerrado) | `src/lib/db/queries.ts` |
-| Gravação de cadastro | Guarda na memória, com as mesmas regras (idempotência, telefone repetido, ponto desconhecido) | `src/lib/leads/criar-lead.ts` |
-| Trilha de auditoria | Lista em memória; alimenta "revelações hoje" | `src/lib/admin/audit.ts` |
+| Formulários no Postgres | Listas em memória, mesmo contrato | `src/repositorios/em-memoria/formularios.ts` |
+| Respostas no Postgres | Listas em memória, com a mesma proteção contra envio repetido | `src/repositorios/em-memoria/respostas.ts` |
+| Trilha de auditoria | Lista em memória; alimenta o freio de força bruta do login | `src/repositorios/auditoria.ts` |
 | Login do admin (senha + TOTP) | Qualquer senha e qualquer código entram; há um botão de atalho | `src/app/(painel)/admin/login/actions.ts` |
-| Limite de cadastros por IP | Desligado, para não trancar quem está testando | `src/lib/security/rate-limit.ts` |
-| Pedido de contato da landing | Guarda na memória | `src/components/site/contato/actions.ts` |
 
-Os dados de demonstração são os mesmos que `pnpm db:seed:demo` grava no banco:
-218 cadastros num sábado de evento, oito pontos de captura com desempenhos
-diferentes e pico das 14h às 17h. O sorteio usa semente fixa, então a história é
-idêntica a cada execução — um link com filtro continua válido depois de
-reiniciar. Nada ali é real: os nomes vêm de listas combinadas, os telefones usam
-a faixa `9 0xxxx-xxxx` que a Anatel nunca alocou e os e-mails são `example.com`.
+A troca acontece num arquivo só, `src/repositorios/index.ts`: ele escolhe a
+implementação e os serviços nunca perguntam qual está em uso.
+
+Os dados de exemplo são três formulários plausíveis — "Experiência na loja"
+(ativo, na versão 2), "Interesse em suplementos" (ativo) e "Pós-venda"
+(rascunho) — e cerca de 120 respostas espalhadas pelos últimos 14 dias. O
+sorteio usa semente fixa, então a história é a mesma a cada execução; as datas
+são relativas ao momento em que o servidor sobe, para "respostas hoje" e
+"última resposta há 4 min" mostrarem alguma coisa em qualquer dia.
+
+"Experiência na loja" tem respostas das versões 1 e 2 de propósito: é o que
+deixa ver, na prática, uma resposta antiga continuando legível depois de o
+formulário ganhar uma pergunta nova.
 
 **O que você cadastrar durante o teste vive enquanto o servidor estiver de pé.**
 Ao reiniciar, tudo volta ao estado inicial.
@@ -71,20 +77,20 @@ Ao reiniciar, tudo volta ao estado inicial.
    | Variável | Para quê | Sem ela |
    | --- | --- | --- |
    | `DATABASE_URL` | Conexão do Neon (endpoint com pool) | Nada que toque o banco funciona |
-   | `NEXT_PUBLIC_SITE_URL` | Canonical, OpenGraph e cupom | Cai em `http://localhost:3000` |
-   | `IP_HASH_SALT` | Hash do IP (`openssl rand -hex 32`) | O IP simplesmente não é gravado |
+   | `NEXT_PUBLIC_SITE_URL` | Endereço canônico nos metadados das páginas | Cai em `http://localhost:3000` |
+   | `IP_HASH_SALT` | Hash do IP no freio de força bruta do login (`openssl rand -hex 32`) | O freio passa a contar por tentativa global, não por IP |
    | `SESSION_SECRET` | Assina o cookie do `/admin` (32+ caracteres) | O login não abre |
    | `ADMIN_PASSWORD` | Senha do painel (16+ caracteres) | O login não abre |
    | `ADMIN_TOTP_SECRET` | Chave do autenticador (`pnpm totp:enroll`) | O login não abre |
-   | `LIMITE_POR_MINUTO` / `LIMITE_POR_HORA` | Opcionais; padrão 5 e 30 | Usa o padrão |
 
-3. Rode as migrações e os seeds:
+3. Rode as migrações:
 
    ```bash
    pnpm db:migrate
-   pnpm db:seed        # evento aberto + pontos de captura
-   pnpm db:seed:demo   # dados de demonstração do /demo
    ```
+
+   Não há seed: o painel abre com o estado vazio e o primeiro formulário é
+   criado pela própria tela.
 
 Num deploy na Vercel o modo de teste já fica desligado sozinho, mesmo com
 `PADRAO = true`: a variável `VERCEL` denuncia o ambiente e o painel nunca sobe
@@ -106,8 +112,9 @@ Três coisas para saber antes:
   própria memória: um cadastro feito numa requisição pode não aparecer na
   seguinte, e some a cada instância reciclada. Serve para demonstrar as telas,
   não para receber cadastro de verdade.
-- **Os números do `/demo` são sempre os mesmos.** É a semente fixa: 218 cadastros,
-  o mesmo pico, o mesmo líder. Bom para apresentar, inútil como relatório.
+- **Os números são sempre os mesmos.** É a semente fixa: os mesmos três
+  formulários e as mesmas ~120 respostas. Bom para apresentar, inútil como
+  relatório.
 
 Para voltar a publicar de verdade, remova `USAR_MOCKS` das variáveis da Vercel.
 O build passa a migrar e a compilar como antes, sem mais nenhuma mudança.
