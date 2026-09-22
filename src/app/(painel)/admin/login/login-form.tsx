@@ -1,25 +1,50 @@
 "use client";
 
 import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { Aviso } from "@/components/painel/primitivos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { A } from "@/lib/texts/admin";
-import { entrarAction, type EstadoLogin } from "./actions";
+import { entrarAction, entrarComoTesteAction, type EstadoLogin } from "./actions";
 
 /**
  * Password + 6-digit code. The code field opens the numeric keyboard and
  * accepts the OS "one-time code" autofill. Errors are one generic line so
  * the screen never says which of the two was wrong.
+ *
+ * Com o modo de teste ligado, um atalho aparece acima do formulário: não há
+ * senha nem autenticador de verdade para conferir neste ambiente.
  */
-export function LoginForm({ next, configurado }: { next: string; configurado: boolean }) {
+export function LoginForm({
+  next,
+  configurado,
+  modoTeste = false,
+}: {
+  next: string;
+  configurado: boolean;
+  modoTeste?: boolean;
+}) {
   const [estado, agir, pendente] = useActionState<EstadoLogin, FormData>(entrarAction, {});
   const L = A.login;
   const bloqueado = pendente || !configurado;
 
   return (
     <div className="space-y-8">
+      {modoTeste && (
+        <section className="space-y-3 rounded-lg border border-atencao/40 bg-atencao-suave px-4 py-4">
+          <div>
+            <p className="text-sm font-semibold text-atencao">{L.teste.titulo}</p>
+            <p className="mt-1 text-sm leading-snug text-muted-foreground">{L.teste.texto}</p>
+          </div>
+          <form action={entrarComoTesteAction}>
+            <input type="hidden" name="next" value={next} />
+            <BotaoTeste rotulo={L.teste.entrar} pendente={L.teste.entrando} />
+          </form>
+        </section>
+      )}
+
       <form action={agir} className="space-y-5" aria-busy={pendente}>
         <input type="hidden" name="next" value={next} />
         <header>
@@ -83,5 +108,15 @@ export function LoginForm({ next, configurado }: { next: string; configurado: bo
         <p className="mt-3 text-xs">{L.ajuda.rodape}</p>
       </details>
     </div>
+  );
+}
+
+/** Precisa ser um filho do <form> para o useFormStatus enxergar o envio. */
+function BotaoTeste({ rotulo, pendente }: { rotulo: string; pendente: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" size="lg" className="w-full" disabled={pending} aria-busy={pending}>
+      {pending ? pendente : rotulo}
+    </Button>
   );
 }

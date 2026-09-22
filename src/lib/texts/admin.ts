@@ -13,6 +13,12 @@ export const A = {
     bloqueado: (min: number) => `Muitas tentativas. Aguarde ${min} minutos e tente de novo.`,
     naoConfigurado: "O acesso ainda não foi configurado neste ambiente. Fale com quem administra o sistema.",
     voltar: "Voltar para o site",
+    teste: {
+      titulo: "Modo de teste",
+      texto: "Este ambiente roda com dados fictícios em memória, sem banco e sem autenticador. Entre direto — ou preencha os campos com qualquer coisa, que também funciona.",
+      entrar: "Entrar como usuário de teste",
+      entrando: "Abrindo o painel…",
+    },
     ajuda: {
       titulo: "Como configurar o autenticador",
       passos: [
