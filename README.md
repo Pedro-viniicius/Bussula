@@ -4,6 +4,16 @@ Experiência física → digital da Essencial Fit: cartões NFC + QR Code, colet
 estruturada, painel e leitura dos sinais deixados pelas pessoas. Este repositório
 reúne a apresentação (`/`) e a captura pública (`/f/essencial-fit`).
 
+## Rodar só para ver as telas
+
+```bash
+pnpm install && pnpm dev   # http://localhost:3000
+```
+
+Sem `.env`, sem banco, sem serviço externo: o modo de teste atende tudo com
+dados fictícios em memória e o `/admin/login` ganha um botão de entrada direta.
+Como desligar e o que configurar para valer: [MOCKS.md](MOCKS.md).
+
 ## Landing (`/`)
 
 Página única, estática, em pt-BR: hero com demonstração animada (toque →
