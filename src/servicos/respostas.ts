@@ -1,0 +1,79 @@
+/**
+ * O caminho de uma resposta de cliente, do toque no cartão até o painel.
+ *
+ * `registrarResposta` é a composição dos passos, em ordem, cada um com uma
+ * saída previsível:
+ *
+ *   carregar o formulário → validar as respostas → limpar o que veio a mais
+ *   → gravar (ou reconhecer que já estava gravado) → confirmar
+ */
+import { RESPOSTAS_POR_PAGINA } from "@/dominio/constantes";
+import { deuCerto, deuErrado, type Resultado } from "@/dominio/erros";
+import type { ValorDaResposta } from "@/dominio/formularios/perguntas";
+import type { OrigemDaResposta, Resposta } from "@/dominio/respostas/tipos";
+import { formulariosGravados, respostasGravadas } from "@/repositorios";
+import { log } from "@/lib/logger";
+import { buscarFormularioPublicoPorSlug } from "./formularios";
+import { limparValores, respostasEstaoValidas, validarRespostas } from "@/validacoes/resposta";
+
+export type EnvioDeResposta = {
+  slug: string;
+  /** Gerada no navegador; reenviar a mesma chave não cria uma segunda resposta. */
+  chaveEnvio: string;
+  valores: Record<string, ValorDaResposta>;
+  origem: OrigemDaResposta;
+};
+
+export type ConfirmacaoDoEnvio = {
+  /** Verdadeiro quando esta chave já tinha sido recebida antes. */
+  jaEstavaRegistrada: boolean;
+};
+
+export async function registrarResposta(envio: EnvioDeResposta): Promise<Resultado<ConfirmacaoDoEnvio>> {
+  const formulario = await buscarFormularioPublicoPorSlug(envio.slug);
+  if (!formulario.ok) {
+    log.warn("resposta recusada", { slug: envio.slug, motivo: formulario.erro });
+    return formulario;
+  }
+
+  const { perguntas, id, versao } = formulario.valor;
+
+  // Mesma validação que rodou no celular. O que chega pela rede não é confiável.
+  const erros = validarRespostas(perguntas, envio.valores);
+  if (!respostasEstaoValidas(erros)) {
+    log.warn("resposta inválida", { slug: envio.slug, perguntas: Object.keys(erros).join(",") });
+    return deuErrado("VALIDACAO_FALHOU", Object.keys(erros).join(","));
+  }
+
+  try {
+    const { duplicada } = await respostasGravadas.gravar({
+      formularioId: id,
+      versaoFormulario: versao,
+      chaveEnvio: envio.chaveEnvio,
+      valores: limparValores(perguntas, envio.valores),
+      origem: envio.origem,
+    });
+    log.info("resposta registrada", { slug: envio.slug, versao, origem: envio.origem, duplicada });
+    return deuCerto({ jaEstavaRegistrada: duplicada });
+  } catch (erro) {
+    log.error("falha ao gravar resposta", { slug: envio.slug, erro: String(erro) });
+    return deuErrado("FALHA_DE_PERSISTENCIA");
+  }
+}
+
+export async function listarRespostas(filtros: { formularioId?: string; pagina: number }) {
+  return respostasGravadas.listar({
+    formularioId: filtros.formularioId,
+    pagina: Math.max(1, filtros.pagina),
+    porPagina: RESPOSTAS_POR_PAGINA,
+  });
+}
+
+export async function buscarRespostasRecentes(limite: number): Promise<Resposta[]> {
+  return respostasGravadas.recentes(limite);
+}
+
+/** As perguntas da versão em que cada resposta foi dada, para exibir o par certo. */
+export async function perguntasDaResposta(resposta: Resposta) {
+  return formulariosGravados.perguntasDaVersao(resposta.formularioId, resposta.versaoFormulario);
+}
