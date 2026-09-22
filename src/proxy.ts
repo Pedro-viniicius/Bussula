@@ -1,12 +1,31 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { ProxyConfig } from "next/server";
 
+/** O cookie da sessão do painel; o nome vem de `src/lib/admin/session.ts`. */
+const COOKIE_SESSAO = "sessao_admin";
+
+/**
+ * Endereços do painel. `/admin/login` é a exceção óbvia: é para lá que se
+ * manda quem não tem sessão.
+ */
+function exigeSessao(caminho: string): boolean {
+  if (caminho === "/admin") return true;
+  return caminho.startsWith("/admin/") && !caminho.startsWith("/admin/login");
+}
+
 /**
  * Security headers for every HTML response.
  *
  * The CSP is nonce-based: Next.js reads the `x-nonce` request header and
  * stamps the nonce on every script it injects, so no `unsafe-inline` is needed
  * for scripts. No third-party origin is allowed at all.
+ *
+ * Também manda para o login quem chega ao painel sem cookie de sessão. Aqui
+ * só se olha se o cookie existe — quem confere a assinatura é `exigirAdmin`,
+ * na própria página, e continua sendo ela a autorização de verdade. O desvio
+ * daqui existe para a resposta ser um 307 limpo, antes de qualquer
+ * renderização: com o `loading.tsx` no caminho, a página responde 200 e envia
+ * o esqueleto primeiro, e quem estiver sem JavaScript ficaria parado nele.
  */
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
@@ -35,7 +54,17 @@ export function proxy(request: NextRequest) {
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("content-security-policy", csp);
 
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const { pathname, search } = request.nextUrl;
+  const semSessao = exigeSessao(pathname) && !request.cookies.get(COOKIE_SESSAO);
+
+  let response: NextResponse;
+  if (semSessao) {
+    const login = new URL("/admin/login", request.url);
+    login.searchParams.set("next", pathname + search);
+    response = NextResponse.redirect(login, 307);
+  } else {
+    response = NextResponse.next({ request: { headers: requestHeaders } });
+  }
 
   response.headers.set("Content-Security-Policy", csp);
   response.headers.set("X-Content-Type-Options", "nosniff");
