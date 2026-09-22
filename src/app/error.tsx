@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export default function ErrorPage({ reset }: { reset: () => void }) {
   return (
-    <main className="captura flex flex-1 flex-col items-center justify-center gap-4 bg-white px-6 py-10 text-center">
+    <main className="flex flex-1 flex-col items-center justify-center gap-4 bg-background px-6 py-10 text-center">
       <Marca />
       <h1 className="text-2xl font-bold tracking-tight">Algo deu errado</h1>
       <p className="max-w-sm text-muted-foreground">

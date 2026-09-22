@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { MARCA } from "@/lib/marca";
 
 /**
- * Identidade visual compartilhada pela landing, pela captura e pelo painel.
+ * Identidade visual compartilhada pelo formulário público e pelo painel.
  * O nome vem sempre de `MARCA`; nenhuma tela escreve a marca à mão.
  */
 

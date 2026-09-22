@@ -15,9 +15,9 @@ const CACHE_ESTATICO = `estatico-${VERSAO}`;
 const TIMEOUT_REDE_MS = 8000;
 
 // Must match src/lib/offline/queue.ts and sync.ts.
-const DB_NOME = "fiat-offline";
+const DB_NOME = "essencial-fit-offline";
 const STORE = "fila";
-const TAG_SYNC = "fila-leads";
+const TAG_SYNC = "fila-respostas";
 const IDADE_MAXIMA_MS = 24 * 60 * 60 * 1000;
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -152,14 +152,14 @@ async function reenviarFila() {
         continue;
       }
       try {
-        const res = await fetch(`/api/f/${encodeURIComponent(item.slug)}/leads`, {
+        const res = await fetch(`/api/f/${encodeURIComponent(item.slug)}/respostas`, {
           method: "POST",
           headers: { "content-type": "application/json", "x-fila-offline": "1" },
-          body: JSON.stringify(item.input),
+          body: JSON.stringify(item.envio),
         });
+        // Só falha de servidor volta para a fila. Qualquer resposta com
+        // sentido — gravada, repetida, formulário fora do ar — encerra o item.
         if (res.status >= 500) throw new Error("servidor");
-        const r = await res.json();
-        if (!r.ok && r.motivo === "limitado") throw new Error("limitado");
         await pedido(db.transaction(STORE, "readwrite").objectStore(STORE).delete(item.chave));
       } catch {
         pendente = true;

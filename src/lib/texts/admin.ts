@@ -1,4 +1,10 @@
-/** Every user-facing string of the admin area, pt-BR. */
+/**
+ * Tudo que a equipe da Essencial Fit lê dentro do painel, em pt-BR.
+ *
+ * Um arquivo só, pelo mesmo motivo do texto público: dá para revisar a
+ * linguagem inteira de uma vez, e ninguém precisa abrir um componente para
+ * corrigir uma frase.
+ */
 export const A = {
   login: {
     marca: "Essencial Fit",
@@ -12,10 +18,11 @@ export const A = {
     erro: "Senha ou código de autenticação inválido.",
     bloqueado: (min: number) => `Muitas tentativas. Aguarde ${min} minutos e tente de novo.`,
     naoConfigurado: "O acesso ainda não foi configurado neste ambiente. Fale com quem administra o sistema.",
-    voltar: "Voltar para o site",
+    voltar: "Voltar ao início",
     teste: {
       titulo: "Modo de teste",
-      texto: "Este ambiente roda com dados fictícios em memória, sem banco e sem autenticador. Entre direto — ou preencha os campos com qualquer coisa, que também funciona.",
+      texto:
+        "Este ambiente roda com dados fictícios em memória, sem banco e sem autenticador. Entre direto — ou preencha os campos com qualquer coisa, que também funciona.",
       entrar: "Entrar como usuário de teste",
       entrando: "Abrindo o painel…",
     },
@@ -29,137 +36,165 @@ export const A = {
         "Chave: a ADMIN_TOTP_SECRET fornecida por quem administra o sistema.",
         "Tipo: baseado em tempo.",
       ],
-      rodape: "Pronto: o aplicativo passa a mostrar um código de 6 dígitos que muda a cada 30 segundos. A chave nunca aparece nesta tela.",
+      rodape:
+        "Pronto: o aplicativo passa a mostrar um código de 6 dígitos que muda a cada 30 segundos. A chave nunca aparece nesta tela.",
     },
   },
-  sair: "Sair",
+
   nav: {
+    marca: "Essencial Fit",
     areas: "Áreas do painel",
-    inicio: "Início do painel",
-    painel: "Painel",
-    demo: "Demonstração",
+    visaoGeral: "Visão geral",
+    formularios: "Formulários",
+    novoFormulario: "Novo formulário",
+    respostas: "Respostas",
+    sair: "Sair",
     pular: "Ir para o conteúdo",
+    abrirMenu: "Abrir menu",
+    fecharMenu: "Fechar menu",
   },
-  demo: {
-    selo: "Demonstração — dados fictícios",
-    titulo: "O que as pessoas estão nos mostrando?",
-    subtitulo: "Os mesmos dados, na ordem de uma decisão: o que pede atenção, como estamos, o que os sinais mostram e quem respondeu.",
-    semDados: {
-      titulo: "A demonstração ainda não tem dados",
-      descricao: "O evento de demonstração não existe neste banco. Rode `pnpm db:seed:demo` para gerar os cadastros fictícios e recarregue esta página.",
-    },
-    atencao: {
-      titulo: "O que merece atenção",
-      descricao: "O que estes dados pedem agora. Cada cartão abre a lista já filtrada.",
-      verRespostas: "Ver essas respostas",
-      hoje: (n: number) => (n === 1 ? "1 pessoa pode decidir hoje" : `${n} pessoas podem decidir hoje`),
-      hojeTexto: "Responderam que a escolha faria sentido hoje. É o grupo com maior chance de virar venda nesta semana.",
-      semPonto: (n: number) => (n === 1 ? "1 resposta sem ponto identificado" : `${n} respostas sem ponto identificado`),
-      semPontoTexto: "Sem atribuição não dá para saber qual cartão, vendedor ou balcão gerou o sinal.",
-      semMarketing: (n: number) => (n === 1 ? "1 pessoa não autorizou campanhas" : `${n} pessoas não autorizaram campanhas`),
-      semMarketingTexto: "Elas ficam fora da exportação de marketing. Contatar quem não consentiu é violação da LGPD.",
-      semMarketingAcao: "Ver como exportar",
-      retencao: (dias: number) => (dias === 1 ? "Anonimização em 1 dia" : `Anonimização em ${dias} dias`),
-      retencaoTexto: (meses: number) =>
-        `A retenção deste evento é de ${meses} meses. No fim do prazo, os dados pessoais são anonimizados e os indicadores continuam.`,
-      vazio: {
-        titulo: "Nada pedindo atenção agora",
-        descricao: "Nenhuma resposta para hoje, nenhuma sem atribuição e nenhuma pendência de consentimento.",
-      },
-    },
+
+  visaoGeral: {
+    titulo: "Visão geral",
+    subtitulo: "Como está a coleta de respostas agora.",
     indicadores: {
-      titulo: "Como estamos",
-      descricao: "Os quatro números que resumem o período.",
-    },
-    kpis: {
       total: "Respostas recebidas",
-      totalContexto: (pontos: number) =>
-        pontos === 1 ? "Coletadas em 1 ponto de contato identificado." : `Coletadas em ${pontos} pontos de contato identificados.`,
-      ate3Meses: "Querem decidir em até 30 dias",
-      ate3MesesSub: (pct: string) => `${pct} do total. Inclui quem respondeu “Hoje”.`,
-      mediaVendedor: "Respostas por ponto (média)",
-      mediaVendedorContexto: (nome: string, total: number) => `Maior volume: ${nome}, com ${total}.`,
-      taxaMarketing: "Autorizaram novidades",
-      taxaMarketingContexto: (sim: number, total: number) => `${sim} de ${total} pessoas aceitaram receber campanhas.`,
-      semContexto: "Ainda sem respostas para comparar.",
+      totalContexto: (dias: number) => `Desde o primeiro formulário publicado. Últimos ${dias} dias em destaque abaixo.`,
+      hoje: "Respostas hoje",
+      hojeContexto: (periodo: number, dias: number) => `${periodo} nos últimos ${dias} dias.`,
+      ativos: "Formulários ativos",
+      ativosContexto: (total: number) => `De ${total} formulário${total === 1 ? "" : "s"} criado${total === 1 ? "" : "s"}.`,
+      ultima: "Última resposta",
+      ultimaVazio: "Ainda não houve",
+      maisRespondido: (nome: string, total: number) => `Mais respondido: ${nome}, com ${total}.`,
     },
-    sinais: { titulo: "O que os sinais mostram" },
-    curva: {
-      titulo: "Quando as pessoas responderam",
-      sub: "Respostas por hora do dia",
-      pico: "maior movimento",
-      leitura: (hora: number, total: number, pct: string) =>
-        `O maior movimento foi às ${hora}h, com ${total} respostas — ${pct} do total do período.`,
+    sinais: {
+      titulo: "Sinais recentes",
+      descricao: "O que os dados pedem agora. Aparece só o que se sustenta.",
+      semSinais: "Nada pedindo atenção no momento.",
     },
-    ranking: {
-      titulo: "Respostas por ponto de contato",
-      sub: "Cada cartão, vendedor ou balcão que coletou sinais",
-      semVendedor: "Sem ponto identificado",
-      leitura: (nome: string, pct: string) => `${nome} concentra ${pct} das respostas identificadas.`,
+    serie: {
+      titulo: "Respostas por dia",
+      descricao: (dias: number) => `Últimos ${dias} dias, no fuso da loja.`,
+      vazio: "Nenhuma resposta nesta janela.",
     },
-    modelo: {
-      titulo: "Interesses mais citados",
-      semResposta: "Não informou",
-      leitura: (rotulo: string, pct: string) => `${rotulo} aparece em ${pct} das respostas.`,
+    formularios: { titulo: "Formulários", verTodos: "Ver todos" },
+    respostasRecentes: { titulo: "Respostas recentes", verTodas: "Ver todas as respostas" },
+    vazio: {
+      titulo: "Nenhum formulário criado ainda",
+      descricao:
+        "Um formulário é o que abre quando o cliente encosta o celular no cartão NFC ou lê o QR Code. Crie o primeiro para começar a receber respostas.",
+      acao: "Criar primeiro formulário",
     },
-    prazo: { titulo: "Momento da escolha", semResposta: "Não informou" },
-    origem: {
-      titulo: "Origem do sinal",
-      sub: "Cartão aproximado ou QR Code lido pela câmera",
-      rotulos: { nfc: "Cartão NFC", qr: "QR Code", manual: "Balcão", direto: "Link direto" } as Record<string, string>,
-    },
-    lista: {
-      titulo: "Respostas individuais",
-      descricao: "Nome, telefone e e-mail ficam mascarados até alguém revelar.",
-      revelacoesHoje: (n: number) => (n === 1 ? "1 revelação hoje" : `${n} revelações hoje`),
-      retencao: (dias: number, meses: number) => `Estes dados serão anonimizados em ${dias} dias (${meses} meses).`,
-      filtros: {
-        titulo: "Filtrar respostas",
-        vendedor: "Ponto de contato",
-        modelo: "Interesse",
-        prazo: "Momento",
-        todos: "Todos",
-        todas: "Todas",
-        semVendedor: "Sem ponto identificado",
-        soMarketing: "Só quem autorizou novidades",
-        aplicar: "Filtrar",
-        limpar: "Limpar filtros",
-        ativos: "Filtros ativos:",
-        marketing: "Só quem autorizou novidades",
-      },
-      colunas: { nome: "Nome", contato: "Contato", interesse: "Interesse", vendedor: "Ponto", consentimentos: "Autorizações", hora: "Hora" },
-      revelar: "Revelar",
-      revelando: "…",
-      revelado: "Revelado",
-      naoContatar: "Não contatar por campanha",
-      suspeito: "Suspeito",
-      consent: { contato_comercial: "Contato", promocao: "Sorteio", marketing: "Marketing" } as Record<string, string>,
-      resultado: (total: number) => (total === 1 ? "1 resposta" : `${total} respostas`),
-      pagina: (p: number, n: number) => `Página ${p} de ${n}`,
-      anterior: "Anterior",
-      proxima: "Próxima",
-      vazio: {
-        titulo: "Nenhuma resposta com esses filtros",
-        descricao: "Tente um recorte mais amplo ou volte à lista completa.",
-      },
-    },
-    exportar: {
-      titulo: "Exportar contatos",
-      botao: (n: number) => `Exportar CSV · só com consentimento de marketing (${n})`,
-      botaoTudo: (n: number) => `Exportar CSV · incluindo ${n} sem consentimento`,
-      incluir: (n: number) => `Incluir os ${n} que não consentiram marketing`,
-      aviso: "Contatar quem não consentiu é violação da LGPD. Esta exportação fica registrada na auditoria.",
-      registrado: "Toda exportação é registrada na auditoria.",
+    semRespostas: {
+      titulo: "Nenhuma resposta recebida ainda",
+      descricao:
+        "As respostas aparecerão aqui quando clientes preencherem um formulário pelo NFC ou QR Code.",
     },
   },
-  painel: {
-    titulo: "Painel Essencial Fit",
-    subtitulo: "Respostas captadas nos cartões NFC e QR Codes da Essencial Fit.",
-    vazio: {
-      titulo: "Nenhum evento real conectado ainda",
-      descricao:
-        "Quando o primeiro evento entrar no ar, as respostas aparecem aqui: indicadores, pontos de contato e a lista de quem respondeu. Enquanto isso, a demonstração mostra o painel completo com dados fictícios.",
+
+  formularios: {
+    titulo: "Formulários",
+    subtitulo: "Cada formulário tem um endereço próprio para gravar no cartão NFC ou virar QR Code.",
+    novo: "Novo formulário",
+    respostas: (total: number) => `${total} ${total === 1 ? "resposta" : "respostas"}`,
+    semRespostas: "Sem respostas",
+    ultimaResposta: (quando: string) => `Última resposta ${quando}`,
+    versao: (numero: number) => `Versão ${numero}`,
+    acoes: {
+      verRespostas: "Ver respostas",
+      editar: "Editar",
+      copiarLink: "Copiar link",
+      copiado: "Link copiado",
+      publicar: "Publicar",
+      ativar: "Ativar",
+      desativar: "Desativar",
+      arquivar: "Arquivar",
+      abrirFormulario: "Abrir formulário",
     },
-    demo: "Ver painel de demonstração",
+    vazio: {
+      titulo: "Nenhum formulário criado ainda",
+      descricao: "Crie o primeiro e o endereço público aparece pronto para copiar.",
+      acao: "Criar primeiro formulário",
+    },
+  },
+
+  editor: {
+    tituloNovo: "Novo formulário",
+    tituloEdicao: "Editar formulário",
+    subtituloNovo: "Dê um nome, escreva as perguntas e publique. Leva poucos minutos.",
+    subtituloEdicao: "Publicar de novo cria uma versão nova. As respostas já recebidas continuam como estão.",
+    nome: "Nome do formulário",
+    nomeAjuda: "Aparece no topo da tela que o cliente vê. Ex.: Experiência na loja.",
+    descricao: "Descrição curta",
+    descricaoAjuda: "Opcional. Uma linha explicando para que serve.",
+    perguntas: "Perguntas",
+    perguntasAjuda: "Pergunte só o necessário. Toque é mais rápido que digitação.",
+    adicionar: "Adicionar pergunta",
+    pergunta: (indice: number) => `Pergunta ${indice}`,
+    enunciado: "Pergunta",
+    enunciadoAjuda: "Ajuda (opcional)",
+    tipo: "Tipo de resposta",
+    obrigatoria: "Resposta obrigatória",
+    opcoes: "Opções",
+    adicionarOpcao: "Adicionar opção",
+    removerOpcao: "Remover opção",
+    opcao: (indice: number) => `Opção ${indice}`,
+    escalaDe: "De",
+    escalaAte: "Até",
+    rotuloMinimo: "Rótulo do menor (opcional)",
+    rotuloMaximo: "Rótulo do maior (opcional)",
+    subir: "Mover para cima",
+    descer: "Mover para baixo",
+    remover: "Remover pergunta",
+    salvar: "Salvar",
+    salvando: "Salvando…",
+    salvarEPublicar: "Salvar e publicar",
+    cancelar: "Cancelar",
+    semPerguntas: "Nenhuma pergunta ainda. Adicione a primeira.",
+    erroGeral: "Confira os campos destacados.",
+  },
+
+  detalhe: {
+    link: "Endereço público",
+    linkAjuda: "É este endereço que vai no cartão NFC ou vira QR Code.",
+    linkIndisponivel: "O endereço público fica disponível depois de publicar.",
+    resultados: "Resultados",
+    resultadosDescricao: "Como as pessoas responderam a cada pergunta.",
+    media: (valor: string) => `Média ${valor}`,
+    respostasEmTexto: "Respostas em texto",
+    semRespostasNaPergunta: "Ninguém respondeu a esta pergunta ainda.",
+    perguntasDaVersao: (numero: number) => `Perguntas da versão ${numero}`,
+    vazio: {
+      titulo: "Nenhuma resposta recebida ainda",
+      descricao:
+        "As respostas aparecerão aqui quando clientes preencherem este formulário pelo NFC ou QR Code.",
+    },
+  },
+
+  respostas: {
+    titulo: "Respostas",
+    subtitulo: "O que os clientes enviaram, da mais recente para a mais antiga.",
+    todosOsFormularios: "Todos os formulários",
+    filtrar: "Filtrar por formulário",
+    de: (nome: string) => `Formulário: ${nome}`,
+    recebidaEm: "Recebida",
+    origem: "Origem",
+    versao: (numero: number) => `versão ${numero}`,
+    semResposta: "Sem resposta",
+    pagina: (atual: number, total: number) => `Página ${atual} de ${total}`,
+    anterior: "Anterior",
+    proxima: "Próxima",
+    vazio: {
+      titulo: "Nenhuma resposta recebida ainda",
+      descricao:
+        "As respostas aparecerão aqui quando clientes preencherem um formulário pelo NFC ou QR Code.",
+    },
+  },
+
+  erros: {
+    naoEncontrado: "Formulário não encontrado.",
+    validacao: "Confira os campos destacados e tente de novo.",
+    generico: "Não foi possível concluir. Tente de novo em instantes.",
   },
 } as const;

@@ -1,47 +1,59 @@
-import type { ResultadoEnvio } from "@/lib/leads/resultado";
+import {
+  ESPERA_INICIAL_ENTRE_TENTATIVAS_MS,
+  MAXIMO_TENTATIVAS_ENVIO,
+  TEMPO_LIMITE_ENVIO_MS,
+} from "@/dominio/constantes";
+import type { ResultadoDoEnvio } from "@/dominio/respostas/envio";
+import type { EnvioDeResposta } from "@/servicos/respostas";
 import { fila, type ItemFila } from "./queue";
 
 /**
- * Replays queued leads. Runs on page load, on `online`, and with exponential
- * backoff while a page is open. The service worker does the same job under
- * Background Sync once the tab is gone (sw.js).
+ * Reenvia o que ficou na fila. Roda ao abrir a página, quando a conexão
+ * volta e, enquanto a aba estiver aberta, com espera crescente. Com a aba
+ * fechada, o service worker faz o mesmo trabalho (public/sw.js).
  *
- * An item leaves the queue when the server answers at all with a semantic
- * result (saved, duplicate, closed, invalid): those must not be retried.
- * Network errors, timeouts, 5xx and the rate limit keep it for later.
+ * Um item sai da fila assim que o servidor responde alguma coisa com
+ * sentido — gravado, repetido, formulário fora do ar, resposta inválida —
+ * porque nenhuma dessas mudaria se tentasse de novo. Só erro de rede,
+ * tempo esgotado e 5xx mantêm o item guardado.
  */
-export const TIMEOUT_MS = 15_000;
+export const TAG_SYNC = "fila-respostas";
+
+/** Um item mais velho que isto é descartado: a pessoa já saiu da loja. */
 const IDADE_MAXIMA_MS = 24 * 60 * 60_000;
-const BACKOFF_BASE_MS = 5_000;
-const BACKOFF_MAX_MS = 5 * 60_000;
-export const TAG_SYNC = "fila-leads";
+const MAIOR_ESPERA_MS = 5 * 60_000;
 
 export function urlEnvio(slug: string) {
-  return `/api/f/${encodeURIComponent(slug)}/leads`;
+  return `/api/f/${encodeURIComponent(slug)}/respostas`;
 }
 
-export async function postarLead(slug: string, input: unknown, replay = false): Promise<ResultadoEnvio> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+/** Uma tentativa de envio, com tempo limite. Lança em falha de rede ou 5xx. */
+export async function postarResposta(
+  slug: string,
+  envio: EnvioDeResposta,
+  reenvio = false,
+): Promise<ResultadoDoEnvio> {
+  const controle = new AbortController();
+  const relogio = setTimeout(() => controle.abort(), TEMPO_LIMITE_ENVIO_MS);
   try {
-    const res = await fetch(urlEnvio(slug), {
+    const resposta = await fetch(urlEnvio(slug), {
       method: "POST",
-      headers: { "content-type": "application/json", ...(replay ? { "x-fila-offline": "1" } : {}) },
-      body: JSON.stringify(input),
-      signal: controller.signal,
+      headers: { "content-type": "application/json", ...(reenvio ? { "x-fila-offline": "1" } : {}) },
+      body: JSON.stringify(envio),
+      signal: controle.signal,
       cache: "no-store",
     });
-    if (res.status >= 500) throw new Error(`servidor respondeu ${res.status}`);
-    return (await res.json()) as ResultadoEnvio;
+    if (resposta.status >= 500) throw new Error(`servidor respondeu ${resposta.status}`);
+    return (await resposta.json()) as ResultadoDoEnvio;
   } finally {
-    clearTimeout(timer);
+    clearTimeout(relogio);
   }
 }
 
 let rodando: Promise<void> | null = null;
-let timer: ReturnType<typeof setTimeout> | null = null;
+let relogio: ReturnType<typeof setTimeout> | null = null;
 
-/** Replays everything once; safe to call repeatedly (single flight). */
+/** Reprocessa a fila uma vez. Chamar várias vezes é seguro. */
 export function sincronizar(): Promise<void> {
   if (!fila.disponivel()) return Promise.resolve();
   if (!rodando) {
@@ -59,6 +71,7 @@ async function executar() {
   } catch {
     return;
   }
+
   let pendentes = 0;
   for (const item of itens) {
     if (Date.now() - item.criadoEm > IDADE_MAXIMA_MS) {
@@ -66,34 +79,35 @@ async function executar() {
       continue;
     }
     try {
-      const r = await postarLead(item.slug, item.input, true);
-      // A rate-limited replay is the only semantic answer worth retrying.
-      if (!r.ok && r.motivo === "limitado") throw new Error("limitado");
+      await postarResposta(item.slug, item.envio, true);
       await fila.remover(item.chave);
     } catch {
       pendentes++;
       await fila.atualizar({ ...item, tentativas: item.tentativas + 1 }).catch(() => {});
     }
   }
-  if (pendentes > 0) agendar(Math.max(...itens.map((i) => i.tentativas)) + 1);
+
+  if (pendentes > 0) agendarNovaTentativa(Math.max(...itens.map((i) => i.tentativas)) + 1);
 }
 
-function agendar(tentativa: number) {
-  if (timer) clearTimeout(timer);
-  const espera = Math.min(BACKOFF_BASE_MS * 2 ** Math.min(tentativa, 10), BACKOFF_MAX_MS);
-  timer = setTimeout(() => {
-    timer = null;
+/** Espera crescente: 1 s, 2 s, 4 s, 8 s… até o teto. Nunca um laço apertado. */
+function agendarNovaTentativa(tentativa: number) {
+  if (relogio) clearTimeout(relogio);
+  const expoente = Math.min(tentativa, MAXIMO_TENTATIVAS_ENVIO + 6);
+  const espera = Math.min(ESPERA_INICIAL_ENTRE_TENTATIVAS_MS * 2 ** expoente, MAIOR_ESPERA_MS);
+  relogio = setTimeout(() => {
+    relogio = null;
     void sincronizar();
   }, espera);
 }
 
-/** Asks the service worker to retry even after the tab is closed (Chrome). */
+/** Pede ao service worker que tente de novo mesmo com a aba fechada (Chrome). */
 export async function pedirSyncEmSegundoPlano() {
   try {
-    const reg = await navigator.serviceWorker?.ready;
-    const sync = (reg as ServiceWorkerRegistration & { sync?: { register(tag: string): Promise<void> } }).sync;
+    const registro = await navigator.serviceWorker?.ready;
+    const sync = (registro as ServiceWorkerRegistration & { sync?: { register(tag: string): Promise<void> } }).sync;
     await sync?.register(TAG_SYNC);
   } catch {
-    /* no Background Sync: the page-side retry above still runs */
+    /* sem Background Sync: a repetição feita pela própria página continua valendo */
   }
 }

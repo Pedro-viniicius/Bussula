@@ -9,7 +9,7 @@
  */
 import { RESPOSTAS_POR_PAGINA } from "@/dominio/constantes";
 import { deuCerto, deuErrado, type Resultado } from "@/dominio/erros";
-import type { ValorDaResposta } from "@/dominio/formularios/perguntas";
+import type { Pergunta, ValorDaResposta } from "@/dominio/formularios/perguntas";
 import type { OrigemDaResposta, Resposta } from "@/dominio/respostas/tipos";
 import { formulariosGravados, respostasGravadas } from "@/repositorios";
 import { log } from "@/lib/logger";
@@ -73,7 +73,41 @@ export async function buscarRespostasRecentes(limite: number): Promise<Resposta[
   return respostasGravadas.recentes(limite);
 }
 
-/** As perguntas da versão em que cada resposta foi dada, para exibir o par certo. */
-export async function perguntasDaResposta(resposta: Resposta) {
-  return formulariosGravados.perguntasDaVersao(resposta.formularioId, resposta.versaoFormulario);
+export type RespostaComPerguntas = {
+  resposta: Resposta;
+  /** As perguntas da versão em que esta resposta foi dada. */
+  perguntas: Pergunta[];
+  nomeDoFormulario: string;
+};
+
+/**
+ * Junta cada resposta com as perguntas da versão em que foi dada.
+ *
+ * Busca cada versão uma vez só, mesmo que vinte respostas venham da mesma —
+ * senão uma página de vinte linhas faria vinte consultas iguais.
+ */
+export async function comPerguntas(respostas: Resposta[]): Promise<RespostaComPerguntas[]> {
+  const formularios = await formulariosGravados.listar();
+  const nomePorId = new Map(formularios.map((f) => [f.id, f.nome]));
+
+  const versoesNecessarias = new Map<string, { formularioId: string; versao: number }>();
+  for (const resposta of respostas) {
+    versoesNecessarias.set(`${resposta.formularioId}:${resposta.versaoFormulario}`, {
+      formularioId: resposta.formularioId,
+      versao: resposta.versaoFormulario,
+    });
+  }
+
+  const perguntasPorVersao = new Map<string, Pergunta[]>();
+  await Promise.all(
+    [...versoesNecessarias.entries()].map(async ([chave, { formularioId, versao }]) => {
+      perguntasPorVersao.set(chave, (await formulariosGravados.perguntasDaVersao(formularioId, versao)) ?? []);
+    }),
+  );
+
+  return respostas.map((resposta) => ({
+    resposta,
+    perguntas: perguntasPorVersao.get(`${resposta.formularioId}:${resposta.versaoFormulario}`) ?? [],
+    nomeDoFormulario: nomePorId.get(resposta.formularioId) ?? "Formulário removido",
+  }));
 }

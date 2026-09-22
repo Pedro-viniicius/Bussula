@@ -1,0 +1,69 @@
+import Link from "next/link";
+import { Marca } from "@/components/marca";
+import { Container } from "@/components/interface/primitivos";
+import { A } from "@/lib/texts/admin";
+import { cn } from "@/lib/utils";
+import { sairAction } from "@/app/(painel)/admin/login/actions";
+
+/**
+ * A barra que acompanha todas as telas do painel.
+ *
+ * A área em que se está é marcada de três formas ao mesmo tempo — peso da
+ * fonte, fundo e `aria-current` —, porque só a cor não seria lida por todo
+ * mundo. No celular a lista rola de lado em vez de virar um menu escondido:
+ * são quatro itens, e escondê-los custaria um toque a mais em tudo.
+ */
+export type AreaDoPainel = "visao-geral" | "formularios" | "novo-formulario" | "respostas";
+
+const AREAS: { chave: AreaDoPainel; rotulo: string; href: string }[] = [
+  { chave: "visao-geral", rotulo: A.nav.visaoGeral, href: "/admin" },
+  { chave: "formularios", rotulo: A.nav.formularios, href: "/admin/formularios" },
+  { chave: "novo-formulario", rotulo: A.nav.novoFormulario, href: "/admin/formularios/novo" },
+  { chave: "respostas", rotulo: A.nav.respostas, href: "/admin/respostas" },
+];
+
+export function TopoAdmin({ atual }: { atual: AreaDoPainel }) {
+  return (
+    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+      <Container className="flex h-16 items-center justify-between gap-4">
+        <Link
+          href="/admin"
+          className="shrink-0 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <Marca compacta />
+        </Link>
+        <form action={sairAction}>
+          <button
+            type="submit"
+            className="inline-flex min-h-11 items-center rounded-md px-3 text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {A.nav.sair}
+          </button>
+        </form>
+      </Container>
+
+      <nav aria-label={A.nav.areas} className="border-t border-border">
+        <Container className="flex gap-1 overflow-x-auto">
+          {AREAS.map((area) => {
+            const ativa = area.chave === atual;
+            return (
+              <Link
+                key={area.chave}
+                href={area.href}
+                aria-current={ativa ? "page" : undefined}
+                className={cn(
+                  "inline-flex min-h-11 shrink-0 items-center border-b-2 px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                  ativa
+                    ? "border-acento font-semibold text-acento-forte"
+                    : "border-transparent font-medium text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {area.rotulo}
+              </Link>
+            );
+          })}
+        </Container>
+      </nav>
+    </header>
+  );
+}

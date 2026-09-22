@@ -9,6 +9,7 @@
 import type { RepositorioDeFormularios } from "@/dominio/formularios/repositorio";
 import type { RepositorioDeRespostas } from "@/dominio/respostas/repositorio";
 import { USAR_MOCKS } from "@/lib/mock/config";
+import { auditoriaEmMemoria, auditoriaNoBanco, type RepositorioDeAuditoria } from "./auditoria";
 import { repositorioDeFormulariosEmMemoria } from "./em-memoria/formularios";
 import { repositorioDeRespostasEmMemoria } from "./em-memoria/respostas";
 import { repositorioDeFormulariosNoBanco } from "./formularios-no-banco";
@@ -21,3 +22,5 @@ export const formulariosGravados: RepositorioDeFormularios = USAR_MOCKS
 export const respostasGravadas: RepositorioDeRespostas = USAR_MOCKS
   ? repositorioDeRespostasEmMemoria
   : repositorioDeRespostasNoBanco;
+
+export const trilhaDeAuditoria: RepositorioDeAuditoria = USAR_MOCKS ? auditoriaEmMemoria : auditoriaNoBanco;

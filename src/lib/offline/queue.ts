@@ -1,20 +1,23 @@
-import type { LeadInput } from "@/lib/validation/lead";
+import type { EnvioDeResposta } from "@/servicos/respostas";
 
 /**
- * IndexedDB queue of leads that could not reach the server.
+ * Fila de respostas que não conseguiram chegar ao servidor, guardada no
+ * IndexedDB do próprio celular.
  *
- * Keyed by chave_idempotencia, so a replay can never create a second row.
- * The service worker (public/sw.js) reads the same store under Background
- * Sync; keep DB_NOME / STORE / the record shape in step with it.
+ * A chave é a `chaveEnvio`, a mesma que o servidor usa para reconhecer um
+ * reenvio — por isso reprocessar a fila nunca cria uma segunda resposta.
+ * O service worker (public/sw.js) lê este mesmo depósito em segundo plano;
+ * se DB_NOME, STORE ou o formato do registro mudarem aqui, mudam lá também.
  */
-export const DB_NOME = "fiat-offline";
+export const DB_NOME = "essencial-fit-offline";
 export const STORE = "fila";
 const VERSAO = 1;
 
 export type ItemFila = {
+  /** É a chaveEnvio: uma resposta só pode estar na fila uma vez. */
   chave: string;
   slug: string;
-  input: LeadInput;
+  envio: EnvioDeResposta;
   criadoEm: number;
   tentativas: number;
 };
