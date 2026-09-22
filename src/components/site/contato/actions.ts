@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { CONTATO } from "@/lib/site/conteudo";
 import { log } from "@/lib/logger";
+import { USAR_MOCKS } from "@/lib/mock/config";
 import { extrairIp, hashIp } from "@/lib/security/ip-hash";
 import { contatoSchema, lerContato, type CampoContato, type ContatoInput } from "@/lib/validation/contato";
 
@@ -34,6 +35,20 @@ export async function enviarSolicitacao(_anterior: EstadoContato, form: FormData
   const h = await headers();
   const ipHash = hashIp(extrairIp(h));
   const userAgent = h.get("user-agent")?.slice(0, 300) ?? null;
+
+  // Modo de teste: o pedido fica em memória e a tela de sucesso aparece igual,
+  // sem banco nenhum por trás. Ver MOCKS.md.
+  if (USAR_MOCKS) {
+    const memoria = await import("@/lib/mock/loja");
+    await memoria.gravarSolicitacaoContato({
+      ...parsed.data,
+      consentimentoVersao: CONTATO.consentimentoVersao,
+      ipHash,
+      userAgent,
+    });
+    log.info("solicitação de contato recebida (modo de teste)");
+    return { status: "enviado" };
+  }
 
   try {
     // Importado aqui para que a landing renderize sem DATABASE_URL configurada.
