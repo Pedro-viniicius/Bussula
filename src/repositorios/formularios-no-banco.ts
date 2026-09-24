@@ -12,6 +12,13 @@ import type { DadosDoFormulario, Formulario, FormularioComPerguntas } from "@/do
 import { db } from "@/lib/db";
 import { formularios, versoesFormulario, type FormularioGravado } from "@/lib/db/schema";
 
+/**
+ * O formato dos ids no Postgres. Um id fora dele (vindo de um endereço
+ * digitado à mão, por exemplo) não pode existir no banco — e, se chegasse à
+ * consulta, o Postgres recusaria a comparação com erro em vez de "não achei".
+ */
+const FORMATO_DE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Linha do banco → formulário do domínio. Um lugar só para essa tradução. */
 function paraDominio(linha: FormularioGravado): Formulario {
   return {
@@ -33,6 +40,7 @@ export const repositorioDeFormulariosNoBanco: RepositorioDeFormularios = {
   },
 
   async buscarPorId(id) {
+    if (!FORMATO_DE_UUID.test(id)) return null;
     const [linha] = await db.select().from(formularios).where(eq(formularios.id, id)).limit(1);
     if (!linha) return null;
     const perguntas = await this.perguntasDaVersao(linha.id, linha.versaoAtual);

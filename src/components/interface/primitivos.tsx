@@ -38,13 +38,15 @@ type CartaoProps = ComponentProps<"section"> & {
   descricao?: string;
   /** Canto superior direito: uma ação ou uma etiqueta. */
   acao?: ReactNode;
-  /** Nível do título dentro da página; 3 quando o cartão já está sob um h2. */
-  nivel?: 2 | 3;
+  /** Nível do título dentro da página; 3 quando o cartão já está sob um h2, 4 sob um h3. */
+  nivel?: 2 | 3 | 4;
 };
+
+const TITULO_DO_NIVEL = { 2: "h2", 3: "h3", 4: "h4" } as const;
 
 /** Superfície única de conteúdo. Nunca aninhe um Cartao dentro de outro. */
 export function Cartao({ titulo, descricao, acao, nivel = 2, className, children, ...props }: CartaoProps) {
-  const Titulo = nivel === 3 ? "h3" : "h2";
+  const Titulo = TITULO_DO_NIVEL[nivel];
   return (
     <section className={cn("rounded-xl border border-border bg-card p-4 sm:p-6", className)} {...props}>
       {(titulo || acao) && (
@@ -144,5 +146,52 @@ export function EstadoVazio({ titulo, descricao, children }: { titulo: string; d
       <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">{descricao}</p>
       {children && <div className="mt-5">{children}</div>}
     </div>
+  );
+}
+
+/**
+ * Um bloco de página: título, uma linha de descrição e, quando cabe, uma
+ * etiqueta ao lado do título ou um atalho no canto. O título é um h2 ligado
+ * à seção por `aria-labelledby`, para a navegação por cabeçalhos funcionar.
+ */
+export function Secao({
+  id,
+  titulo,
+  descricao,
+  etiqueta,
+  acao,
+  className,
+  children,
+}: {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  /** Uma etiqueta curta ao lado do título, como "Direto das respostas". */
+  etiqueta?: ReactNode;
+  acao?: { href: string; rotulo: string };
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section id={id} aria-labelledby={`${id}-titulo`} className={cn("scroll-mt-32", className)}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h2 id={`${id}-titulo`} className="text-lg font-semibold tracking-tight sm:text-xl">
+            {titulo}
+          </h2>
+          {etiqueta}
+        </div>
+        {acao && (
+          <Link
+            href={acao.href}
+            className="inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            {acao.rotulo}
+          </Link>
+        )}
+      </div>
+      {descricao && <p className="mt-0.5 max-w-3xl text-sm text-muted-foreground">{descricao}</p>}
+      <div className="mt-4">{children}</div>
+    </section>
   );
 }

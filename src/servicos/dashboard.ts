@@ -4,31 +4,47 @@
  * Nenhum número daqui é gravado no banco: tudo é contado a partir das
  * respostas cruas no momento da consulta. É mais uma consulta, e em troca não
  * existe indicador que possa discordar do que os clientes responderam.
+ *
+ * Os números de um formulário só (para a tela de resultados) moram em
+ * `src/dominio/resultados`; aqui ficam os números do painel inteiro.
  */
 import { DIAS_PERIODO_PADRAO } from "@/dominio/constantes";
-import type { DistribuicaoDaPergunta, PontoDaSerie, ResumoDaColeta, SinalRelevante } from "@/dominio/dashboard/tipos";
-import { MAIOR_NOTA_DA_AVALIACAO, type Pergunta } from "@/dominio/formularios/perguntas";
+import type { PontoDaSerie, ResumoDaColeta, SinalRelevante } from "@/dominio/dashboard/tipos";
 import type { FormularioNaLista } from "@/dominio/formularios/tipos";
-import type { Resposta } from "@/dominio/respostas/tipos";
+import { calcularVariacao, mudancaMereceAtencao } from "@/dominio/resultados/variacao";
 import { formulariosGravados, respostasGravadas } from "@/repositorios";
+import { formatarPorcentagem } from "@/utilitarios/numeros";
 import { inicioDeDiasAtras, inicioDeHoje } from "@/utilitarios/tempo";
-
-/** Quantos textos abertos a tela mostra por pergunta. */
-const TEXTOS_MOSTRADOS_POR_PERGUNTA = 8;
 
 /** Dias sem resposta a partir dos quais um formulário ativo vira um sinal. */
 const DIAS_DE_SILENCIO_QUE_PREOCUPAM = 7;
 
+/** Com menos respostas que isto no período anterior, uma queda em porcentagem engana. */
+const MINIMO_DE_RESPOSTAS_PARA_COMPARAR_PERIODOS = 10;
+
+const UM_DIA_MS = 86_400_000;
+
 export async function carregarResumoDoDashboard(agora: Date = new Date()): Promise<ResumoDaColeta> {
-  const [formularios, totaisPorFormulario, totalDeRespostas, respostasHoje, respostasNoPeriodo, ultimaRespostaEm] =
-    await Promise.all([
-      formulariosGravados.listar(),
-      respostasGravadas.totaisPorFormulario(),
-      respostasGravadas.contarTudo(),
-      respostasGravadas.contarDesde(inicioDeHoje(agora)),
-      respostasGravadas.contarDesde(inicioDeDiasAtras(DIAS_PERIODO_PADRAO - 1, agora)),
-      respostasGravadas.ultimaEm(),
-    ]);
+  const inicioDoPeriodo = inicioDeDiasAtras(DIAS_PERIODO_PADRAO - 1, agora);
+  const inicioDoPeriodoAnterior = inicioDeDiasAtras(2 * DIAS_PERIODO_PADRAO - 1, agora);
+
+  const [
+    formularios,
+    totaisPorFormulario,
+    totalDeRespostas,
+    respostasHoje,
+    respostasNoPeriodo,
+    respostasNosDoisPeriodos,
+    ultimaRespostaEm,
+  ] = await Promise.all([
+    formulariosGravados.listar(),
+    respostasGravadas.totaisPorFormulario(),
+    respostasGravadas.contarTudo(),
+    respostasGravadas.contarDesde(inicioDeHoje(agora)),
+    respostasGravadas.contarDesde(inicioDoPeriodo),
+    respostasGravadas.contarDesde(inicioDoPeriodoAnterior),
+    respostasGravadas.ultimaEm(),
+  ]);
 
   let maisRespondido: ResumoDaColeta["formularioMaisRespondido"] = null;
   for (const formulario of formularios) {
@@ -42,7 +58,8 @@ export async function carregarResumoDoDashboard(agora: Date = new Date()): Promi
     totalDeRespostas,
     respostasHoje,
     respostasNoPeriodo,
-    formulariosAtivos: formularios.filter((f) => f.situacao === "ATIVO").length,
+    respostasNoPeriodoAnterior: respostasNosDoisPeriodos - respostasNoPeriodo,
+    formulariosAtivos: formularios.filter((formulario) => formulario.situacao === "ATIVO").length,
     ultimaRespostaEm,
     formularioMaisRespondido: maisRespondido,
   };
@@ -55,23 +72,30 @@ export async function carregarSerieDeRespostas(
 ): Promise<PontoDaSerie[]> {
   const desde = inicioDeDiasAtras(dias - 1, agora);
   const recebidas = await respostasGravadas.porDia(desde);
-  const porDia = new Map(recebidas.map((p) => [p.dia.toDateString(), p.total]));
+  const porDia = new Map(recebidas.map((ponto) => [ponto.dia.toDateString(), ponto.total]));
 
   const serie: PontoDaSerie[] = [];
-  for (let i = 0; i < dias; i++) {
-    const dia = inicioDeDiasAtras(dias - 1 - i, agora);
+  for (let posicao = 0; posicao < dias; posicao++) {
+    const dia = inicioDeDiasAtras(dias - 1 - posicao, agora);
     serie.push({ dia, total: porDia.get(dia.toDateString()) ?? 0 });
   }
   return serie;
 }
 
+/** O ritmo da coleta: quantas respostas no período atual e no anterior, de mesmo tamanho. */
+export type RitmoDaColeta = { respostasNoPeriodo: number; respostasNoPeriodoAnterior: number; dias: number };
+
 /**
  * O que merece atenção agora. Só entra na lista o que os dados sustentam —
  * sem sinal inventado para a tela não ficar vazia.
  */
-export function detectarSinais(formularios: FormularioNaLista[], agora: Date = new Date()): SinalRelevante[] {
+export function detectarSinais(
+  formularios: FormularioNaLista[],
+  agora: Date = new Date(),
+  ritmo?: RitmoDaColeta,
+): SinalRelevante[] {
   const sinais: SinalRelevante[] = [];
-  const ativos = formularios.filter((f) => f.situacao === "ATIVO");
+  const ativos = formularios.filter((formulario) => formulario.situacao === "ATIVO");
 
   if (formularios.length > 0 && ativos.length === 0) {
     sinais.push({
@@ -91,14 +115,14 @@ export function detectarSinais(formularios: FormularioNaLista[], agora: Date = n
         tom: "atencao",
         titulo: `"${formulario.nome}" ainda não recebeu respostas`,
         texto: "Confira se o link certo foi gravado no cartão NFC ou no QR Code.",
-        href: `/admin/formularios/${formulario.id}`,
-        acao: "Abrir formulário",
+        href: enderecoDoFormularioNaLista(formulario.id),
+        acao: "Ver formulário",
       });
       continue;
     }
 
     const diasEmSilencio = formulario.ultimaRespostaEm
-      ? Math.floor((agora.getTime() - formulario.ultimaRespostaEm.getTime()) / 86_400_000)
+      ? Math.floor((agora.getTime() - formulario.ultimaRespostaEm.getTime()) / UM_DIA_MS)
       : 0;
     if (diasEmSilencio >= DIAS_DE_SILENCIO_QUE_PREOCUPAM) {
       sinais.push({
@@ -106,90 +130,38 @@ export function detectarSinais(formularios: FormularioNaLista[], agora: Date = n
         tom: "atencao",
         titulo: `"${formulario.nome}" está sem respostas há ${diasEmSilencio} dias`,
         texto: "O formulário está ativo, mas ninguém respondeu na última semana.",
-        href: `/admin/formularios/${formulario.id}`,
-        acao: "Abrir formulário",
+        href: enderecoDoFormularioNaLista(formulario.id),
+        acao: "Ver formulário",
       });
     }
   }
 
+  const queda = ritmo ? detectarQuedaDaColeta(ritmo) : null;
+  if (queda) sinais.push(queda);
+
   return sinais;
 }
 
-/**
- * Como as pessoas responderam a cada pergunta de um formulário.
- *
- * Lê as respostas de todas as versões e casa cada valor com a pergunta de
- * mesmo id na versão atual. Pergunta que só existiu numa versão antiga não
- * aparece — o que foi respondido continua guardado, só não tem onde ser
- * mostrado aqui.
- */
-export async function calcularDistribuicoes(
-  formularioId: string,
-  perguntas: Pergunta[],
-): Promise<DistribuicaoDaPergunta[]> {
-  const respostas = await respostasGravadas.doFormulario(formularioId);
-  return perguntas.map((pergunta) => resumirPergunta(pergunta, respostas));
-}
+/** Uma queda de verdade no número de respostas — não a oscilação normal de uma semana para outra. */
+function detectarQuedaDaColeta(ritmo: RitmoDaColeta): SinalRelevante | null {
+  const { respostasNoPeriodo, respostasNoPeriodoAnterior, dias } = ritmo;
+  if (respostasNoPeriodoAnterior < MINIMO_DE_RESPOSTAS_PARA_COMPARAR_PERIODOS) return null;
 
-function resumirPergunta(pergunta: Pergunta, respostas: Resposta[]): DistribuicaoDaPergunta {
-  const valores = respostas
-    .map((r) => r.valores[pergunta.id])
-    .filter((v) => v !== undefined && v !== null);
+  const variacao = calcularVariacao(respostasNoPeriodo, respostasNoPeriodoAnterior);
+  if (variacao.tipo !== "queda") return null;
+  if (!mudancaMereceAtencao(respostasNoPeriodo, respostasNoPeriodoAnterior)) return null;
 
-  const base: DistribuicaoDaPergunta = {
-    perguntaId: pergunta.id,
-    enunciado: pergunta.enunciado,
-    tipo: pergunta.tipo,
-    totalDeRespostas: valores.length,
-    opcoes: [],
-    media: null,
-    textos: [],
+  return {
+    chave: "queda-da-coleta",
+    tom: "atencao",
+    titulo: `A coleta caiu ${formatarPorcentagem(variacao.fracao)} em relação aos ${dias} dias anteriores`,
+    texto: `Foram ${respostasNoPeriodo} respostas nos últimos ${dias} dias, contra ${respostasNoPeriodoAnterior} nos ${dias} dias anteriores. Vale conferir se o cartão NFC e o QR Code continuam à vista.`,
+    href: "/admin/resultados",
+    acao: "Ver resultados",
   };
-
-  switch (pergunta.tipo) {
-    case "escolha_unica":
-      base.opcoes = contarRotulos(pergunta.opcoes, valores.filter((v): v is string => typeof v === "string"));
-      return base;
-
-    case "multipla_escolha": {
-      const marcadas = valores.flatMap((v) => (Array.isArray(v) ? v : []));
-      base.opcoes = contarRotulos(pergunta.opcoes, marcadas);
-      return base;
-    }
-
-    case "sim_nao": {
-      const booleanos = valores.filter((v): v is boolean => typeof v === "boolean");
-      base.opcoes = [
-        { rotulo: "Sim", total: booleanos.filter(Boolean).length },
-        { rotulo: "Não", total: booleanos.filter((v) => !v).length },
-      ];
-      return base;
-    }
-
-    case "escala":
-    case "avaliacao": {
-      const numeros = valores.filter((v): v is number => typeof v === "number");
-      const menor = pergunta.tipo === "avaliacao" ? 1 : (pergunta.escala?.minimo ?? 0);
-      const maior = pergunta.tipo === "avaliacao" ? MAIOR_NOTA_DA_AVALIACAO : (pergunta.escala?.maximo ?? 10);
-      const pontos: { rotulo: string; total: number }[] = [];
-      for (let valor = menor; valor <= maior; valor++) {
-        pontos.push({ rotulo: String(valor), total: numeros.filter((n) => n === valor).length });
-      }
-      base.opcoes = pontos;
-      base.media = numeros.length ? numeros.reduce((soma, n) => soma + n, 0) / numeros.length : null;
-      return base;
-    }
-
-    case "texto_curto":
-    case "texto_livre":
-      base.textos = valores
-        .filter((v): v is string => typeof v === "string" && v.trim() !== "")
-        .slice(0, TEXTOS_MOSTRADOS_POR_PERGUNTA);
-      return base;
-  }
 }
 
-/** Conta quantas vezes cada opção apareceu, na ordem em que foram escritas. */
-function contarRotulos(opcoes: string[], marcadas: string[]): { rotulo: string; total: number }[] {
-  return opcoes.map((rotulo) => ({ rotulo, total: marcadas.filter((m) => m === rotulo).length }));
+/** O cartão do formulário na lista, onde estão o endereço público e a situação. */
+function enderecoDoFormularioNaLista(formularioId: string): string {
+  return `/admin/formularios#formulario-${formularioId}`;
 }

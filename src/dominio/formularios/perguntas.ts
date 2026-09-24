@@ -19,8 +19,16 @@ export const TIPOS_DE_PERGUNTA = [
 
 export type TipoDePergunta = (typeof TIPOS_DE_PERGUNTA)[number];
 
+/**
+ * O jeito de ler as respostas de um tipo:
+ * - nota: um número numa escala, que dá para somar e tirar média;
+ * - escolha: opções que dá para contar;
+ * - texto: palavras da própria pessoa, que se leem, não se somam.
+ */
+export type FamiliaDoTipo = "nota" | "escolha" | "texto";
+
 export type DescricaoDoTipo = {
-  /** Nome do tipo no editor. */
+  /** Nome do tipo quando é preciso mostrá-lo. */
   rotulo: string;
   /** Uma linha explicando quando usar. */
   quandoUsar: string;
@@ -28,6 +36,7 @@ export type DescricaoDoTipo = {
   usaOpcoes: boolean;
   /** Se o tipo precisa de um intervalo numérico configurável. */
   usaEscala: boolean;
+  familia: FamiliaDoTipo;
 };
 
 export const DESCRICAO_DO_TIPO: Record<TipoDePergunta, DescricaoDoTipo> = {
@@ -36,42 +45,49 @@ export const DESCRICAO_DO_TIPO: Record<TipoDePergunta, DescricaoDoTipo> = {
     quandoUsar: "Uma opção entre várias. É a pergunta mais rápida de responder.",
     usaOpcoes: true,
     usaEscala: false,
+    familia: "escolha",
   },
   multipla_escolha: {
     rotulo: "Múltipla escolha",
     quandoUsar: "Quando mais de uma opção pode ser verdadeira ao mesmo tempo.",
     usaOpcoes: true,
     usaEscala: false,
+    familia: "escolha",
   },
   escala: {
     rotulo: "Escala",
     quandoUsar: "Intensidade ou concordância, de um número a outro.",
     usaOpcoes: false,
     usaEscala: true,
+    familia: "nota",
   },
   avaliacao: {
     rotulo: "Avaliação",
     quandoUsar: "Nota de 1 a 5 estrelas para uma experiência.",
     usaOpcoes: false,
     usaEscala: false,
+    familia: "nota",
   },
   sim_nao: {
     rotulo: "Sim ou não",
     quandoUsar: "Uma pergunta fechada, com duas respostas possíveis.",
     usaOpcoes: false,
     usaEscala: false,
+    familia: "escolha",
   },
   texto_curto: {
     rotulo: "Texto curto",
     quandoUsar: "Um nome, um número, uma palavra. Digitar cansa: use pouco.",
     usaOpcoes: false,
     usaEscala: false,
+    familia: "texto",
   },
   texto_livre: {
     rotulo: "Texto livre",
     quandoUsar: "Só quando a opinião em palavras da pessoa vale mais que uma opção.",
     usaOpcoes: false,
     usaEscala: false,
+    familia: "texto",
   },
 };
 
@@ -142,6 +158,20 @@ export function trocarTipo(pergunta: Pergunta, tipo: TipoDePergunta): Pergunta {
     opcoes: descricao.usaOpcoes ? (pergunta.opcoes.length ? pergunta.opcoes : ["", ""]) : [],
     escala: descricao.usaEscala ? (pergunta.escala ?? { ...ESCALA_PADRAO }) : null,
   };
+}
+
+/** Se a resposta de um tipo se soma, se conta ou se lê. */
+export function familiaDoTipo(tipo: TipoDePergunta): FamiliaDoTipo {
+  return DESCRICAO_DO_TIPO[tipo].familia;
+}
+
+/**
+ * O menor e o maior valor possíveis numa pergunta de nota. A avaliação vai
+ * sempre de 1 a 5; a escala usa o intervalo que foi configurado nela.
+ */
+export function limitesDaNota(pergunta: Pergunta): { menor: number; maior: number } {
+  if (pergunta.tipo === "avaliacao") return { menor: 1, maior: MAIOR_NOTA_DA_AVALIACAO };
+  return { menor: pergunta.escala?.minimo ?? 0, maior: pergunta.escala?.maximo ?? 10 };
 }
 
 /** Verdadeiro quando a pessoa deixou a pergunta em branco, qualquer que seja o tipo. */

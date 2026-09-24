@@ -32,10 +32,14 @@ export function SerieDeRespostas({ serie }: { serie: PontoDaSerie[] }) {
               <span className="text-center text-xs font-medium tabular-nums text-muted-foreground">
                 {ponto.total > 0 ? ponto.total : ""}
               </span>
-              <span
-                className={cn("w-full rounded-t-sm", ponto.total > 0 ? "bg-acento" : "bg-muted")}
-                style={{ height: `${Math.max(altura, ponto.total > 0 ? 6 : 2)}%` }}
-              />
+              {/* A altura da barra é medida só no espaço que sobra entre o número e a data:
+                  medida na coluna inteira, a barra mais alta empurrava a data para fora do gráfico. */}
+              <span className="flex min-h-0 w-full flex-1 items-end">
+                <span
+                  className={cn("w-full rounded-t-sm", ponto.total > 0 ? "bg-acento" : "bg-muted")}
+                  style={{ height: `${Math.max(altura, ponto.total > 0 ? 6 : 2)}%` }}
+                />
+              </span>
               <span className="truncate text-center text-[0.65rem] leading-tight text-muted-foreground sm:text-xs">
                 {DIA_E_MES.format(ponto.dia)}
               </span>

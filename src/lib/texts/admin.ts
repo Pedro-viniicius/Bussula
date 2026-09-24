@@ -5,6 +5,9 @@
  * linguagem inteira de uma vez, e ninguém precisa abrir um componente para
  * corrigir uma frase.
  */
+import type { Variacao } from "@/dominio/resultados/variacao";
+import { formatarPorcentagem } from "@/utilitarios/numeros";
+
 export const A = {
   login: {
     marca: "Essencial Fit",
@@ -42,28 +45,25 @@ export const A = {
   },
 
   nav: {
-    marca: "Essencial Fit",
     areas: "Áreas do painel",
-    visaoGeral: "Visão geral",
+    visaoGeral: "Visão Geral",
     formularios: "Formulários",
-    novoFormulario: "Novo formulário",
-    respostas: "Respostas",
+    resultados: "Resultados & IA",
     sair: "Sair",
     pular: "Ir para o conteúdo",
-    abrirMenu: "Abrir menu",
-    fecharMenu: "Fechar menu",
   },
 
   visaoGeral: {
-    titulo: "Visão geral",
+    titulo: "Visão Geral",
     subtitulo: "Como está a coleta de respostas agora.",
     indicadores: {
+      titulo: "Resumo da coleta",
       total: "Respostas recebidas",
-      totalContexto: (dias: number) => `Desde o primeiro formulário publicado. Últimos ${dias} dias em destaque abaixo.`,
       hoje: "Respostas hoje",
       hojeContexto: (periodo: number, dias: number) => `${periodo} nos últimos ${dias} dias.`,
       ativos: "Formulários ativos",
-      ativosContexto: (total: number) => `De ${total} formulário${total === 1 ? "" : "s"} criado${total === 1 ? "" : "s"}.`,
+      ativosContexto: (total: number) =>
+        total === 1 ? "De 1 formulário disponível." : `De ${total} formulários disponíveis.`,
       ultima: "Última resposta",
       ultimaVazio: "Ainda não houve",
       maisRespondido: (nome: string, total: number) => `Mais respondido: ${nome}, com ${total}.`,
@@ -79,12 +79,11 @@ export const A = {
       vazio: "Nenhuma resposta nesta janela.",
     },
     formularios: { titulo: "Formulários", verTodos: "Ver todos" },
-    respostasRecentes: { titulo: "Respostas recentes", verTodas: "Ver todas as respostas" },
+    respostasRecentes: { titulo: "Respostas recentes", verResultados: "Ver resultados por formulário" },
     vazio: {
-      titulo: "Nenhum formulário criado ainda",
+      titulo: "Nenhum formulário disponível ainda",
       descricao:
-        "Um formulário é o que abre quando o cliente encosta o celular no cartão NFC ou lê o QR Code. Crie o primeiro para começar a receber respostas.",
-      acao: "Criar primeiro formulário",
+        "Um formulário é o que abre quando o cliente encosta o celular no cartão NFC ou lê o QR Code. Assim que o primeiro estiver no ar, os números da coleta aparecem aqui.",
     },
     semRespostas: {
       titulo: "Nenhuma resposta recebida ainda",
@@ -93,108 +92,150 @@ export const A = {
     },
   },
 
+  /** "38 respostas nos últimos 7 dias · 12% a menos que nos 7 dias anteriores (43)." */
+  comparacao: {
+    noPeriodo: (total: number, dias: number) =>
+      `${total} ${total === 1 ? "resposta" : "respostas"} nos últimos ${dias} dias`,
+    variacao: (variacao: Variacao, anterior: number, dias: number) => {
+      switch (variacao.tipo) {
+        case "sem-base":
+          return `Nenhuma resposta nos ${dias} dias anteriores para comparar.`;
+        case "estavel":
+          return `Parecido com os ${dias} dias anteriores (${anterior}).`;
+        case "alta":
+          return `${formatarPorcentagem(variacao.fracao)} a mais que nos ${dias} dias anteriores (${anterior}).`;
+        case "queda":
+          return `${formatarPorcentagem(variacao.fracao)} a menos que nos ${dias} dias anteriores (${anterior}).`;
+      }
+    },
+  },
+
   formularios: {
     titulo: "Formulários",
-    subtitulo: "Cada formulário tem um endereço próprio para gravar no cartão NFC ou virar QR Code.",
-    novo: "Novo formulário",
+    subtitulo:
+      "Os formulários disponíveis para a sua loja e como cada um está indo. Cada um tem um endereço próprio, gravado no cartão NFC ou no QR Code.",
     respostas: (total: number) => `${total} ${total === 1 ? "resposta" : "respostas"}`,
     semRespostas: "Sem respostas",
-    ultimaResposta: (quando: string) => `Última resposta ${quando}`,
-    versao: (numero: number) => `Versão ${numero}`,
+    campos: {
+      objetivo: "Objetivo",
+      respostas: "Respostas",
+      ultimaResposta: "Última resposta",
+      criadoEm: "Criado em",
+      nenhumaAinda: "Nenhuma ainda",
+    },
+    endereco: {
+      titulo: "Endereço público",
+      ajuda: "É este endereço que vai no cartão NFC ou vira QR Code.",
+    },
     acoes: {
-      verRespostas: "Ver respostas",
-      editar: "Editar",
+      verResultados: "Ver resultados",
       copiarLink: "Copiar link",
       copiado: "Link copiado",
-      publicar: "Publicar",
       ativar: "Ativar",
       desativar: "Desativar",
       arquivar: "Arquivar",
       abrirFormulario: "Abrir formulário",
+      erro: "Não foi possível mudar a situação agora. Tente de novo.",
     },
     vazio: {
-      titulo: "Nenhum formulário criado ainda",
-      descricao: "Crie o primeiro e o endereço público aparece pronto para copiar.",
-      acao: "Criar primeiro formulário",
-    },
-  },
-
-  editor: {
-    tituloNovo: "Novo formulário",
-    tituloEdicao: "Editar formulário",
-    subtituloNovo: "Dê um nome, escreva as perguntas e publique. Leva poucos minutos.",
-    subtituloEdicao: "Publicar de novo cria uma versão nova. As respostas já recebidas continuam como estão.",
-    nome: "Nome do formulário",
-    nomeAjuda: "Aparece no topo da tela que o cliente vê. Ex.: Experiência na loja.",
-    descricao: "Descrição curta",
-    descricaoAjuda: "Opcional. Uma linha explicando para que serve.",
-    perguntas: "Perguntas",
-    perguntasAjuda: "Pergunte só o necessário. Toque é mais rápido que digitação.",
-    adicionar: "Adicionar pergunta",
-    pergunta: (indice: number) => `Pergunta ${indice}`,
-    enunciado: "Pergunta",
-    enunciadoAjuda: "Ajuda (opcional)",
-    tipo: "Tipo de resposta",
-    obrigatoria: "Resposta obrigatória",
-    opcoes: "Opções",
-    adicionarOpcao: "Adicionar opção",
-    removerOpcao: "Remover opção",
-    opcao: (indice: number) => `Opção ${indice}`,
-    escalaDe: "De",
-    escalaAte: "Até",
-    rotuloMinimo: "Rótulo do menor (opcional)",
-    rotuloMaximo: "Rótulo do maior (opcional)",
-    subir: "Mover para cima",
-    descer: "Mover para baixo",
-    remover: "Remover pergunta",
-    salvar: "Salvar",
-    salvando: "Salvando…",
-    salvarEPublicar: "Salvar e publicar",
-    cancelar: "Cancelar",
-    semPerguntas: "Nenhuma pergunta ainda. Adicione a primeira.",
-    erroGeral: "Confira os campos destacados.",
-  },
-
-  detalhe: {
-    link: "Endereço público",
-    linkAjuda: "É este endereço que vai no cartão NFC ou vira QR Code.",
-    linkIndisponivel: "O endereço público fica disponível depois de publicar.",
-    resultados: "Resultados",
-    resultadosDescricao: "Como as pessoas responderam a cada pergunta.",
-    media: (valor: string) => `Média ${valor}`,
-    respostasEmTexto: "Respostas em texto",
-    semRespostasNaPergunta: "Ninguém respondeu a esta pergunta ainda.",
-    perguntasDaVersao: (numero: number) => `Perguntas da versão ${numero}`,
-    vazio: {
-      titulo: "Nenhuma resposta recebida ainda",
+      titulo: "Nenhum formulário disponível ainda",
       descricao:
-        "As respostas aparecerão aqui quando clientes preencherem este formulário pelo NFC ou QR Code.",
+        "Os formulários são preparados e configurados pela equipe que cuida do sistema. Assim que o primeiro estiver pronto, ele aparece aqui.",
     },
   },
 
+  resultados: {
+    titulo: "Resultados & IA",
+    subtitulo:
+      "Primeiro os números, tirados direto das respostas. Depois, uma leitura do que eles podem significar e do que dá para fazer com isso.",
+    escolher: "Escolher formulário",
+    vazio: {
+      titulo: "Nenhum formulário disponível ainda",
+      descricao: "Assim que o primeiro formulário estiver no ar, os resultados aparecem aqui.",
+    },
+    naoEncontrado: {
+      titulo: "Formulário não encontrado",
+      descricao: "Este endereço não corresponde a nenhum formulário disponível. Escolha um na lista acima.",
+    },
+    dados: {
+      titulo: "Dados",
+      etiqueta: "Direto das respostas",
+      descricao: "Tudo nesta parte é contagem feita sobre as respostas recebidas, sem interpretação.",
+      total: "Respostas recebidas",
+      noPeriodo: (dias: number) => `Nos últimos ${dias} dias`,
+      hoje: "Respostas hoje",
+      ultima: "Última resposta",
+      ultimaVazio: "Ainda não houve",
+      semRespostas: {
+        titulo: "Nenhuma resposta recebida ainda",
+        descricao: "Os números aparecem aqui quando clientes preencherem este formulário pelo NFC ou QR Code.",
+      },
+    },
+    evolucao: {
+      titulo: "Evolução das respostas",
+      descricao: (dias: number) => `Respostas por dia nos últimos ${dias} dias, no fuso da loja.`,
+    },
+    origens: {
+      titulo: "Por onde as respostas chegam",
+      descricao: "Cartão NFC, QR Code ou link direto.",
+    },
+    porPergunta: {
+      titulo: "Resposta por pergunta",
+      descricao: "Como as pessoas responderam a cada pergunta da versão atual do formulário.",
+      media: (valor: string) => `Média ${valor}`,
+      maisEscolhida: (rotulo: string, proporcao: string) => `Mais escolhida: ${rotulo} · ${proporcao}`,
+      respostasEmTexto: "Respostas em texto",
+      ultimasEmTexto: (mostradas: number, total: number) =>
+        mostradas < total ? `As ${mostradas} mais recentes de ${total}.` : "",
+      semRespostasNaPergunta: "Ninguém respondeu a esta pergunta ainda.",
+    },
+    analise: {
+      titulo: "Inteligência dos dados",
+      etiqueta: "Leitura automática",
+      descricao:
+        "O que os números acima podem significar. Cada ponto mostra em que dado se apoia, e o que é fato fica separado do que é interpretação ou hipótese.",
+      carregando: "Analisando os resultados…",
+      insuficiente: (total: number, minimo: number) =>
+        `Ainda não há respostas suficientes para gerar esta análise. São ${total} até agora; a análise começa a partir de ${minimo}.`,
+      semAchados: "Os dados atuais ainda não são suficientes para sustentar uma conclusão além dos números acima.",
+      natureza: {
+        fato: "Fato observado",
+        interpretacao: "Interpretação",
+        hipotese: "Hipótese",
+      },
+      grupos: {
+        fato: { titulo: "Fatos observados", descricao: "O que as respostas mostram, sem interpretação." },
+        interpretacao: { titulo: "Interpretações", descricao: "O que os fatos podem indicar." },
+        hipotese: { titulo: "Hipóteses a investigar", descricao: "Explicações possíveis. Ainda não são conclusões." },
+      },
+      comBaseEm: "Com base em",
+      fonte: "Fonte",
+      limites: "Limites desta análise",
+    },
+    acoes: {
+      titulo: "Possíveis ações",
+      descricao: "O que dá para fazer com essa informação. São sugestões para avaliar, não certezas.",
+      vazio: "Por enquanto, os dados não apontam uma ação específica. Vale acompanhar os números nas próximas semanas.",
+    },
+    respostas: {
+      titulo: "Respostas individuais",
+      descricao: "Cada resposta recebida, da mais recente para a mais antiga — a base de todos os números acima.",
+      pagina: (atual: number, total: number) => `Página ${atual} de ${total}`,
+      paginacao: "Páginas de respostas",
+      anterior: "Anterior",
+      proxima: "Próxima",
+    },
+    erro: {
+      titulo: "Não foi possível carregar os resultados.",
+      descricao: "Pode ter sido uma falha passageira. Tente de novo em instantes.",
+      tentar: "Tentar de novo",
+      voltar: "Voltar à Visão Geral",
+    },
+  },
+
+  /** Uma resposta individual, onde quer que ela apareça. */
   respostas: {
-    titulo: "Respostas",
-    subtitulo: "O que os clientes enviaram, da mais recente para a mais antiga.",
-    todosOsFormularios: "Todos os formulários",
-    filtrar: "Filtrar por formulário",
-    de: (nome: string) => `Formulário: ${nome}`,
-    recebidaEm: "Recebida",
-    origem: "Origem",
     versao: (numero: number) => `versão ${numero}`,
     semResposta: "Sem resposta",
-    pagina: (atual: number, total: number) => `Página ${atual} de ${total}`,
-    anterior: "Anterior",
-    proxima: "Próxima",
-    vazio: {
-      titulo: "Nenhuma resposta recebida ainda",
-      descricao:
-        "As respostas aparecerão aqui quando clientes preencherem um formulário pelo NFC ou QR Code.",
-    },
-  },
-
-  erros: {
-    naoEncontrado: "Formulário não encontrado.",
-    validacao: "Confira os campos destacados e tente de novo.",
-    generico: "Não foi possível concluir. Tente de novo em instantes.",
   },
 } as const;

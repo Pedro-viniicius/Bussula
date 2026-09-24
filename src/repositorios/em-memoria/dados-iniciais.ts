@@ -2,8 +2,9 @@
  * Os formulários e respostas de exemplo do modo de teste.
  *
  * Existem para que o projeto abra com as telas cheias mesmo sem banco. Nada
- * aqui é real: são três formulários plausíveis da Essencial Fit e respostas
- * sorteadas com semente fixa, para a história ser a mesma a cada execução.
+ * aqui é real: são os três formulários incluídos no serviço da Essencial Fit —
+ * dois no ar e um ainda em preparação — e respostas sorteadas com semente
+ * fixa, para a história ser a mesma a cada execução.
  *
  * As datas são relativas ao momento em que o servidor sobe, e não fixas no
  * calendário — é o que faz "respostas hoje" e "última resposta há 4 min"
@@ -157,7 +158,7 @@ export function gerarDadosIniciais(agora: Date = new Date()): DadosIniciais {
     id: "form-experiencia-na-loja",
     slug: "experiencia-na-loja",
     nome: "Experiência na loja",
-    descricao: "Três perguntas rápidas para quem acabou de ser atendido.",
+    descricao: "Entender como foi a visita de quem acabou de ser atendido na loja.",
     situacao: "ATIVO",
     versaoAtual: 2,
     criadoEm: new Date(agora.getTime() - 32 * DIA),
@@ -168,7 +169,7 @@ export function gerarDadosIniciais(agora: Date = new Date()): DadosIniciais {
     id: "form-interesse-suplementos",
     slug: "interesse-em-suplementos",
     nome: "Interesse em suplementos",
-    descricao: "Para o cartão do balcão de suplementos.",
+    descricao: "Descobrir o que procura quem passa pelo balcão de suplementos.",
     situacao: "ATIVO",
     versaoAtual: 1,
     criadoEm: new Date(agora.getTime() - 18 * DIA),
@@ -179,7 +180,7 @@ export function gerarDadosIniciais(agora: Date = new Date()): DadosIniciais {
     id: "form-pos-venda",
     slug: "pos-venda",
     nome: "Pós-venda",
-    descricao: "Ainda sendo escrito: vai no e-mail de confirmação do pedido.",
+    descricao: "Saber se o pedido chegou como o cliente esperava. Vai no e-mail de confirmação.",
     situacao: "RASCUNHO",
     versaoAtual: 1,
     criadoEm: new Date(agora.getTime() - 3 * DIA),

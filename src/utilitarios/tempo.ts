@@ -44,15 +44,36 @@ export function dataCompleta(data: Date): string {
   });
 }
 
-/** Início do dia de hoje no fuso da loja — base para "respostas hoje". */
-export function inicioDeHoje(agora: Date = new Date()): Date {
-  const diaLocal = agora.toLocaleDateString("en-CA", { timeZone: FUSO_HORARIO });
+/**
+ * Início do dia em que a data cai, no fuso da loja.
+ *
+ * É a chave de qualquer agrupamento por dia: duas respostas do mesmo dia
+ * paulista viram o mesmo instante aqui, esteja o servidor no fuso que estiver.
+ */
+export function inicioDoDia(data: Date): Date {
+  const diaLocal = data.toLocaleDateString("en-CA", { timeZone: FUSO_HORARIO });
   return new Date(`${diaLocal}T00:00:00-03:00`);
 }
 
-/** Início do dia que ficou `dias` dias para trás, no mesmo fuso. */
+/** Início do dia de hoje no fuso da loja — base para "respostas hoje". */
+export function inicioDeHoje(agora: Date = new Date()): Date {
+  return inicioDoDia(agora);
+}
+
+/**
+ * Início do dia que ficou `dias` dias para trás, no mesmo fuso.
+ *
+ * Subtrai dias inteiros em milissegundos, e não pelo calendário do servidor:
+ * o fuso da loja não tem horário de verão, então cada dia tem 24 horas
+ * exatas — e o resultado bate com `inicioDoDia` seja qual for o fuso da
+ * máquina.
+ */
 export function inicioDeDiasAtras(dias: number, agora: Date = new Date()): Date {
-  const inicio = inicioDeHoje(agora);
-  inicio.setDate(inicio.getDate() - dias);
-  return inicio;
+  return new Date(inicioDeHoje(agora).getTime() - dias * DIA);
+}
+
+/** Quantos dias de calendário, no fuso da loja, separam as duas datas. Ontem → hoje é 1. */
+export function diasEntre(inicio: Date, fim: Date): number {
+  const diferenca = inicioDoDia(fim).getTime() - inicioDoDia(inicio).getTime();
+  return Math.round(diferenca / DIA);
 }

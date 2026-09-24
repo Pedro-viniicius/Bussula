@@ -5,7 +5,6 @@
  * alguma coisa. Nada é guardado no banco: tudo é calculado a partir das
  * respostas cruas, então não há número que possa ficar defasado.
  */
-import type { TipoDePergunta } from "@/dominio/formularios/perguntas";
 
 /** "Como está a coleta?" — o cabeçalho da visão geral. */
 export type ResumoDaColeta = {
@@ -15,6 +14,8 @@ export type ResumoDaColeta = {
   respostasHoje: number;
   /** E nos últimos dias da janela padrão? */
   respostasNoPeriodo: number;
+  /** E nos dias anteriores a ela, numa janela de mesmo tamanho? É a base da comparação. */
+  respostasNoPeriodoAnterior: number;
   /** Quantos formulários estão ativos? */
   formulariosAtivos: number;
   /** Quando foi a última resposta? Nulo enquanto ninguém respondeu. */
@@ -25,21 +26,6 @@ export type ResumoDaColeta = {
 
 /** Um dia da série "respostas por dia". */
 export type PontoDaSerie = { dia: Date; total: number };
-
-/**
- * Como as pessoas responderam a uma pergunta. `opcoes` vale para escolha,
- * sim/não e escala; `media` só existe onde somar faz sentido.
- */
-export type DistribuicaoDaPergunta = {
-  perguntaId: string;
-  enunciado: string;
-  tipo: TipoDePergunta;
-  totalDeRespostas: number;
-  opcoes: { rotulo: string; total: number }[];
-  media: number | null;
-  /** Últimas respostas em texto, quando a pergunta é aberta. */
-  textos: string[];
-};
 
 /** Algo que merece atenção agora — só aparece quando os dados sustentam. */
 export type SinalRelevante = {

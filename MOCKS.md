@@ -32,11 +32,9 @@ sobrescreve o que você definiu.
 | --- | --- | --- |
 | Acesso | `/` | A porta de entrada do sistema |
 | Login do painel | `/admin/login` | Botão **Entrar como usuário de teste** (ou qualquer senha e qualquer código) |
-| Visão geral | `/admin` | Indicadores, sinais, respostas por dia e respostas recentes |
-| Formulários | `/admin/formularios` | Lista, situações, link público, ativar e desativar |
-| Novo formulário | `/admin/formularios/novo` | Criar, escrever perguntas, reordenar, publicar |
-| Resultados | `/admin/formularios/<id>` | Distribuição de cada pergunta e respostas em texto |
-| Respostas | `/admin/respostas` | Lista completa, filtro por formulário e paginação |
+| Visão Geral | `/admin` | Indicadores, sinais, respostas por dia e respostas recentes |
+| Formulários | `/admin/formularios` | Os três formulários, situação, link público, desativar e arquivar |
+| Resultados & IA | `/admin/resultados` | Dados, análise, possíveis ações e respostas uma a uma, por formulário |
 | Formulário público | `/f/experiencia-na-loja` | Cinco perguntas, uma por vez, envio e confirmação |
 | Formulário pausado | `/f/pos-venda` | O aviso que o cliente vê quando o formulário não está ativo |
 | Endereço inexistente | `/f/nao-existe` | O aviso de formulário não encontrado |
@@ -50,13 +48,15 @@ sobrescreve o que você definiu.
 | Respostas no Postgres | Listas em memória, com a mesma proteção contra envio repetido | `src/repositorios/em-memoria/respostas.ts` |
 | Trilha de auditoria | Lista em memória; alimenta o freio de força bruta do login | `src/repositorios/auditoria.ts` |
 | Login do admin (senha + TOTP) | Qualquer senha e qualquer código entram; há um botão de atalho | `src/app/(painel)/admin/login/actions.ts` |
+| Análise com modelo de linguagem | A análise é sempre feita pelas regras fixas, mesmo com `ANALISE_IA_MODELO` definido | `src/integracoes/analise/index.ts` |
 
 A troca acontece num arquivo só, `src/repositorios/index.ts`: ele escolhe a
 implementação e os serviços nunca perguntam qual está em uso.
 
-Os dados de exemplo são três formulários plausíveis — "Experiência na loja"
-(ativo, na versão 2), "Interesse em suplementos" (ativo) e "Pós-venda"
-(rascunho) — e cerca de 120 respostas espalhadas pelos últimos 14 dias. O
+Os dados de exemplo são os três formulários incluídos no serviço —
+"Experiência na loja" (ativo, na versão 2), "Interesse em suplementos" (ativo)
+e "Pós-venda" (em preparação) — e 123 respostas espalhadas pelos últimos 14
+dias. O
 sorteio usa semente fixa, então a história é a mesma a cada execução; as datas
 são relativas ao momento em que o servidor sobe, para "respostas hoje" e
 "última resposta há 4 min" mostrarem alguma coisa em qualquer dia.
@@ -89,8 +89,10 @@ Ao reiniciar, tudo volta ao estado inicial.
    pnpm db:migrate
    ```
 
-   Não há seed: o painel abre com o estado vazio e o primeiro formulário é
-   criado pela própria tela.
+   Não há seed: o painel abre com o estado vazio. Os formulários não são
+   criados pelo painel — quem cuida do sistema os grava com as funções de
+   `src/servicos/formularios.ts` (`criarFormulario`, `publicarFormulario`),
+   que continuam com todas as validações.
 
 Num deploy na Vercel o modo de teste já fica desligado sozinho, mesmo com
 `PADRAO = true`: a variável `VERCEL` denuncia o ambiente e o painel nunca sobe
@@ -113,7 +115,7 @@ Três coisas para saber antes:
   seguinte, e some a cada instância reciclada. Serve para demonstrar as telas,
   não para receber cadastro de verdade.
 - **Os números são sempre os mesmos.** É a semente fixa: os mesmos três
-  formulários e as mesmas ~120 respostas. Bom para apresentar, inútil como
+  formulários e as mesmas 123 respostas. Bom para apresentar, inútil como
   relatório.
 
 Para voltar a publicar de verdade, remova `USAR_MOCKS` das variáveis da Vercel.

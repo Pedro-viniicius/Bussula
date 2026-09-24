@@ -70,6 +70,15 @@ export async function buscarFormularioPublicoPorSlug(slug: string): Promise<Resu
   });
 }
 
+/*
+ * Criar, editar e publicar.
+ *
+ * Nenhuma tela do painel chama estas funções: os formulários são preparados
+ * e configurados pela equipe que cuida do sistema, não pela loja. Elas
+ * continuam aqui, com as mesmas regras, para as ferramentas internas dessa
+ * equipe — e para que um formulário nunca seja gravado sem passar por elas.
+ */
+
 export async function criarFormulario(dados: DadosDoFormulario): Promise<Resultado<Formulario>> {
   const limpos = limparDadosDoFormulario(dados);
   if (!formularioEstaValido(validarFormulario(limpos))) return deuErrado("VALIDACAO_FALHOU");

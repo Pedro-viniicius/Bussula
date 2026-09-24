@@ -11,6 +11,9 @@ import { formatarValor } from "@/utilitarios/valores";
  * As perguntas vêm da versão em que a resposta foi dada, e não da versão
  * atual — é isso que mantém uma resposta antiga fazendo sentido depois de o
  * formulário mudar.
+ *
+ * O nome do formulário é opcional: numa lista em que todas as respostas são
+ * do mesmo formulário, repeti-lo em cada cartão só atrapalharia a leitura.
  */
 export function RespostaRecebida({
   resposta,
@@ -20,7 +23,7 @@ export function RespostaRecebida({
 }: {
   resposta: Resposta;
   perguntas: Pergunta[];
-  nomeDoFormulario: string;
+  nomeDoFormulario?: string;
   href?: string;
 }) {
   const respondidas = perguntas
@@ -30,15 +33,17 @@ export function RespostaRecebida({
   return (
     <li className="rounded-xl border border-border bg-card p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <p className="text-sm font-semibold">
-          {href ? (
-            <Link href={href} className="underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50">
-              {nomeDoFormulario}
-            </Link>
-          ) : (
-            nomeDoFormulario
-          )}
-        </p>
+        {nomeDoFormulario && (
+          <p className="text-sm font-semibold">
+            {href ? (
+              <Link href={href} className="underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50">
+                {nomeDoFormulario}
+              </Link>
+            ) : (
+              nomeDoFormulario
+            )}
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">
           <Quando data={resposta.criadoEm} /> · {ROTULO_DA_ORIGEM[resposta.origem]} ·{" "}
           {A.respostas.versao(resposta.versaoFormulario)}

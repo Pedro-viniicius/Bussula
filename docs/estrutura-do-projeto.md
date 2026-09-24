@@ -26,7 +26,12 @@ as regras são aplicadas              src/servicos/
    ↓
 a resposta é guardada                src/repositorios/
    ↓
-o painel conta e mostra              src/app/(painel)/ + src/servicos/dashboard.ts
+o painel conta e mostra              src/servicos/dashboard.ts + src/dominio/resultados/
+   ↓
+a análise interpreta os números      src/dominio/analise/ (+ src/integracoes/analise/)
+   ↓
+a tela mostra, nesta ordem:          src/app/(painel)/admin/resultados/
+dados → interpretação → possíveis ações
 ```
 
 ## As pastas
@@ -39,7 +44,17 @@ existem, o que significa "ativo", como um erro se chama.
 Cada definição existe aqui **uma vez só**, e o resto do sistema lê daqui. É por
 isso que "Ativo" é escrito igual no painel inteiro.
 
-*Não coloque aqui:* nada que toque banco de dados, nada que desenhe tela.
+Duas subpastas merecem nota:
+
+- `resultados/` — como as respostas de um formulário viram números: total,
+  ritmo dos dias, canais, distribuição de cada pergunta. É conta pura, testável
+  sem banco.
+- `analise/` — o que esses números podem significar. Define o contrato do
+  analista, as regras fixas que escrevem fatos, interpretações, hipóteses e
+  ações, e a trava que descarta qualquer frase sem base nos dados.
+
+*Não coloque aqui:* nada que toque banco de dados, nada que desenhe tela, nada
+que chame serviço externo.
 
 ### `src/servicos/`
 
@@ -60,6 +75,16 @@ o arquivo `index.ts`, e só ele.
 
 *Não coloque aqui:* regra de negócio. Esta pasta guarda e devolve; não decide.
 
+### `src/integracoes/`
+
+**É onde o sistema conversa com serviços de fora.** Hoje, só o modelo de
+linguagem que pode escrever a análise dos resultados. É a única pasta que sabe
+o endereço do serviço, como autenticar e o formato do pedido; quem escolhe se
+ele é usado é o arquivo `analise/index.ts`, e só ele.
+
+*Não coloque aqui:* regra de negócio nem cálculo — o modelo recebe números já
+calculados e só escreve sobre eles.
+
 ### `src/validacoes/`
 
 **É onde se confere o que foi preenchido.** As mesmas funções rodam no celular
@@ -72,9 +97,12 @@ As peças de tela, separadas por assunto:
 
 - `interface/` — peças que qualquer tela usa: cartão, etiqueta, número, aviso,
   estado vazio, situação, data.
-- `navegacao/` — a barra do painel.
-- `formularios/` — criar e editar um formulário, e a tela que o cliente vê.
-- `dashboard/` — indicadores, gráfico, sinais, resposta recebida.
+- `navegacao/` — a barra do painel e a lista das três áreas.
+- `formularios/` — a tela que o cliente vê, o link público e os botões de
+  pausar, retomar e arquivar.
+- `dashboard/` — gráfico de respostas por dia, sinais, resposta recebida.
+- `resultados/` — a tela de Resultados & IA: escolha do formulário, dados,
+  análise, possíveis ações e respostas uma a uma.
 - `ui/` — botão, campo e rótulo. A base de tudo; mexa com cuidado.
 
 *Não coloque aqui:* consulta ao banco, nem regra de negócio.
@@ -99,7 +127,12 @@ administrador, registro de log, fila offline, textos das telas.
 ### `src/utilitarios/`
 
 Funções pequenas e genéricas: transformar data em "há 8 min", transformar um
-nome em endereço, transformar uma resposta em texto.
+nome em endereço, transformar uma resposta em texto, escrever "62% (18 de 29)".
+
+### `src/testes/`
+
+Peças para montar cenários de teste sem repetir objetos inteiros. Os testes
+ficam ao lado do que testam, em arquivos `.test.ts`, e rodam com `pnpm test`.
 
 ### `drizzle/`
 
