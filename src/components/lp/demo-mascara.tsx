@@ -8,40 +8,37 @@ import { LinhaMascarada, type Registro } from "./linha-mascarada";
 const horaAgora = () =>
   new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
 
-/**
- * Demonstração da seção de privacidade: uma linha mascarada e, logo abaixo,
- * o registro de auditoria que aparece quando alguém revela.
- */
+/** Uma linha mascarada e, abaixo, o registro de auditoria que aparece quando alguém revela. */
 export function DemoMascara() {
   const [registros, setRegistros] = useState<string[]>([]);
   const T = LP.privacidade.demo;
   const linha = LP.mock.registros.linhas[0] as Registro;
 
   return (
-    <div className="rounded-(--lp-radius) border border-(--lp-line) bg-(--lp-surface) p-5 sm:p-6">
+    <div className="rounded-[28px] bg-canvas p-6 text-ink sm:p-10">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold">{T.titulo}</p>
-        <span className="rounded-full bg-(--lp-accent-soft) px-2.5 py-0.5 text-xs font-medium text-(--lp-accent)">
+        <p className="text-[15px] font-semibold">{T.titulo}</p>
+        <span className="rounded-full border border-hairline px-2.5 py-0.5 text-[12px] font-medium text-ink-muted">
           {LP.mock.exemplo}
         </span>
       </div>
-      <p className="mt-1 text-sm text-(--lp-muted)">{T.instrucao}</p>
+      <p className="mt-1 text-[15px] text-ink-muted">{T.instrucao}</p>
 
-      <div className="mt-4 border-y border-(--lp-line)">
+      <div className="mt-6 border-y border-hairline">
         <LinhaMascarada grande registro={linha} aoRevelar={() => setRegistros((r) => [horaAgora(), ...r])} />
       </div>
 
-      <div className="mt-4 min-h-14">
+      <div className="mt-5 min-h-12" aria-live="polite">
         {registros.length === 0 ? (
-          <p className="text-sm text-(--lp-muted)">{LP.mock.registros.aviso}</p>
+          <p className="text-[15px] text-ink-muted">{LP.mock.registros.aviso}</p>
         ) : (
-          <ul className="space-y-2" aria-live="polite">
+          <ul className="space-y-2">
             {registros.map((hora, i) => (
-              <li key={`${hora}-${i}`} className="flex items-start gap-2 text-sm">
-                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-(--lp-accent)" aria-hidden />
+              <li key={`${hora}-${i}`} className="flex items-start gap-2 text-[15px]">
+                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
                 <span>
                   <span className="font-medium">{T.registrado}</span>{" "}
-                  <span className="text-(--lp-muted)">
+                  <span className="text-ink-muted">
                     às {hora} · {T.por}
                   </span>
                 </span>

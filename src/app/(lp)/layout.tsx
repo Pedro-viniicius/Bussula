@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import { LP } from "@/lib/texts/lp";
 import "./lp.css";
+
+// Baixada no build e servida do próprio domínio: a CSP (font-src 'self') continua valendo.
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
   title: LP.meta.titulo,
@@ -17,8 +21,8 @@ export const metadata: Metadata = {
 
 /**
  * A landing page é uma rota à parte. Não toca no formulário de captura nem
- * no painel. Os tokens visuais ficam em lp.css, sob `.lp-a` e `.lp-b`.
+ * no painel.
  */
 export default function LpLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <div className={`${inter.variable} flex min-h-full flex-1 flex-col`}>{children}</div>;
 }

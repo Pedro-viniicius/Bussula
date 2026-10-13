@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LP } from "@/lib/texts/lp";
+import { cn } from "@/lib/utils";
 
 export type Registro = {
   nome: string;
@@ -13,7 +14,7 @@ export type Registro = {
 
 type Props = {
   registro: Registro;
-  /** Chamado quando a pessoa revela; a demonstração de privacidade usa para montar o registro de auditoria. */
+  /** A demonstração de privacidade usa para montar o registro de auditoria. */
   aoRevelar?: (registro: Registro) => void;
   grande?: boolean;
 };
@@ -27,29 +28,26 @@ function desmascarar(r: Registro): Registro {
   return { ...r, nome: nomeCompleto, telefone: `(${ddd}) 90234-56${fim}`, email };
 }
 
-/**
- * Linha do painel com dados mascarados. "Revelar" mostra o dado inteiro
- * (fictício) e deixa claro que a ação ficou registrada.
- */
+/** Linha do painel com contato mascarado. "Revelar" mostra o dado (fictício) e marca que ficou registrado. */
 export function LinhaMascarada({ registro, aoRevelar, grande = false }: Props) {
   const [revelado, setRevelado] = useState(false);
   const T = LP.mock.registros;
   const v = revelado ? desmascarar(registro) : registro;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
+    <div className={cn("flex flex-wrap items-center justify-between gap-x-4 gap-y-3", grande ? "py-5" : "py-3.5")}>
       <div className="min-w-0">
-        <p className={grande ? "text-lg font-semibold" : "text-sm font-semibold"}>{v.nome}</p>
-        <p className={`truncate tabular-nums text-(--lp-ink-2) ${grande ? "text-base" : "text-xs sm:text-sm"}`}>
+        <p className={cn("font-semibold text-ink", grande ? "text-lg" : "text-[15px]")}>{v.nome}</p>
+        <p className={cn("text-ink tabular-nums", grande ? "text-[17px] break-words" : "truncate text-sm")}>
           {v.telefone}
-          {v.email && <span className="text-(--lp-muted)"> · {v.email}</span>}
+          {v.email && <span className="text-ink-muted"> · {v.email}</span>}
         </p>
-        <p className="text-xs text-(--lp-muted)">
+        <p className="mt-0.5 text-[13px] text-ink-muted">
           {registro.quem} · {registro.quando}
         </p>
       </div>
       {revelado ? (
-        <span className="text-xs font-medium tracking-wide text-(--lp-muted) uppercase">{T.revelado}</span>
+        <span className="text-[13px] font-medium text-ink-muted">{T.revelado}</span>
       ) : (
         <button
           type="button"
@@ -57,7 +55,10 @@ export function LinhaMascarada({ registro, aoRevelar, grande = false }: Props) {
             setRevelado(true);
             aoRevelar?.(registro);
           }}
-          className={`rounded-lg border border-(--lp-line) bg-(--lp-surface) font-medium text-(--lp-ink) hover:border-(--lp-accent) ${grande ? "min-h-11 px-4 text-sm" : "min-h-9 px-3 text-xs"}`}
+          className={cn(
+            "rounded-full border border-hairline bg-canvas font-medium text-brand transition-colors hover:border-brand",
+            grande ? "min-h-11 px-5 text-[15px]" : "min-h-9 px-4 text-[13px]",
+          )}
         >
           {T.revelar}
         </button>

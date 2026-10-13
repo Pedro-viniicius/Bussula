@@ -1,9 +1,9 @@
-import Link from "next/link";
 import {
   Bell,
   BookOpen,
   Check,
   ChevronDown,
+  ChevronRight,
   Clock,
   DoorOpen,
   Keyboard,
@@ -22,55 +22,52 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LP } from "@/lib/texts/lp";
+import { Logo } from "./logo";
 import { Toque } from "./toque";
 import { PainelMock } from "./painel-mock";
 import { DemoMascara } from "./demo-mascara";
 import { FormPiloto } from "./form-piloto";
 
-export type Variante = "a" | "b";
-type P = { variante: Variante };
-
 /* ---------- blocos de apoio ---------- */
 
-export function Container({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn("mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8", className)}>{children}</div>;
+function Container({ className, children }: { className?: string; children: React.ReactNode }) {
+  return <div className={cn("mx-auto w-full max-w-[1200px] px-6 lg:px-10", className)}>{children}</div>;
 }
 
-function Rotulo({ children, centro = false }: { children: React.ReactNode; centro?: boolean }) {
-  return (
-    <p className={cn("text-xs font-semibold tracking-[0.14em] text-(--lp-accent) uppercase", centro && "text-center")}>
-      {children}
-    </p>
-  );
-}
-
-function Titulo({ children, centro = false, className }: { children: React.ReactNode; centro?: boolean; className?: string }) {
-  return (
-    <h2 className={cn("mt-3 max-w-3xl text-3xl leading-tight font-bold sm:text-4xl", centro && "mx-auto text-center", className)}>
-      {children}
-    </h2>
-  );
-}
-
-export function BotaoCta({
-  href = "#piloto-form",
-  children,
-  secundario = false,
-  className,
+/** Cabeçalho de seção centralizado: eyebrow, título e no máximo duas linhas de apoio. */
+function Cabecalho({
+  eyebrow,
+  titulo,
+  texto,
+  escuro = false,
+  extra,
 }: {
-  href?: string;
-  children: React.ReactNode;
-  secundario?: boolean;
-  className?: string;
+  eyebrow: string;
+  titulo: string;
+  texto?: string;
+  escuro?: boolean;
+  extra?: React.ReactNode;
 }) {
+  return (
+    <div className="mx-auto max-w-[900px] text-center" data-reveal>
+      <div className="flex items-center justify-center gap-2">
+        <p className={cn("lp-eyebrow", escuro ? "text-brand-light" : "text-ink-muted")}>{eyebrow}</p>
+        {extra}
+      </div>
+      <h2 className={cn("lp-h2 mt-3", escuro ? "text-white" : "text-ink")}>{titulo}</h2>
+      {texto && (
+        <p className={cn("lp-lead mx-auto mt-5 max-w-[680px]", escuro ? "text-white/80" : "text-ink-muted")}>{texto}</p>
+      )}
+    </div>
+  );
+}
+
+function BotaoPrimario({ href = "#piloto-form", children, className }: { href?: string; children: React.ReactNode; className?: string }) {
   return (
     <a
       href={href}
       className={cn(
-        "inline-flex min-h-12 items-center justify-center rounded-lg px-6 text-base font-semibold transition-opacity",
-        secundario
-          ? "border border-(--lp-line) bg-(--lp-surface) text-(--lp-ink) hover:border-(--lp-accent)"
-          : "bg-(--lp-accent) text-(--lp-accent-ink) hover:opacity-90",
+        "inline-flex min-h-12 items-center justify-center rounded-full bg-brand px-7 text-[17px] font-medium text-white transition-colors hover:bg-brand-dark active:bg-brand-dark",
         className,
       )}
     >
@@ -79,33 +76,56 @@ export function BotaoCta({
   );
 }
 
-/* ---------- 0. navegação ---------- */
+function LinkSeta({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a href={href} className="inline-flex min-h-12 items-center gap-0.5 text-[17px] font-medium text-brand hover:underline">
+      {children}
+      <ChevronRight className="size-4" aria-hidden />
+    </a>
+  );
+}
 
-export function Nav({ variante }: P) {
+function SeloEmBreve({ escuro = false }: { escuro?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border border-dashed px-2.5 py-0.5 text-[12px] font-medium whitespace-nowrap",
+        escuro ? "border-white/30 text-white/80" : "border-ink-muted/40 text-ink-muted",
+      )}
+    >
+      <Clock className="size-3" aria-hidden />
+      {LP.canais.emBreveRotulo}
+    </span>
+  );
+}
+
+/* ---------- navegação ---------- */
+
+export function Nav() {
   const N = LP.nav;
-  const base = variante === "a" ? "/lp" : "/lp/b";
   const links = [
-    [`${base}#como-funciona`, N.comoFunciona],
-    [`${base}#privacidade`, N.privacidade],
-    [`${base}#piloto`, N.piloto],
-    [`${base}#perguntas`, N.perguntas],
+    ["#como-funciona", N.comoFunciona],
+    ["#privacidade", N.privacidade],
+    ["#piloto", N.piloto],
+    ["#perguntas", N.perguntas],
   ] as const;
   return (
-    <header className="sticky top-0 z-20 border-b border-(--lp-line) bg-(--lp-bg)/85 backdrop-blur">
-      <Container className="flex h-14 items-center justify-between">
-        <Link href={base} className="lp-display text-lg font-bold tracking-tight">
-          {N.marca}
-        </Link>
-        <nav aria-label="Seções da página" className="hidden items-center gap-6 text-sm text-(--lp-ink-2) md:flex">
+    <header className="sticky top-0 z-30 bg-ink/92 backdrop-blur-xl backdrop-saturate-150">
+      {/* Altura 56px com logo de 18px: 19px de respiro acima e abaixo, mais que a altura do símbolo. */}
+      <Container className="flex h-14 items-center justify-between gap-6">
+        <a href="#topo" aria-label="Bússola, início da página" className="shrink-0">
+          <Logo altura={18} />
+        </a>
+        <nav aria-label="Seções da página" className="hidden items-center gap-8 text-[13px] text-white/80 md:flex">
           {links.map(([href, txt]) => (
-            <a key={href} href={href} className="hover:text-(--lp-ink)">
+            <a key={href} href={href} className="transition-colors hover:text-white">
               {txt}
             </a>
           ))}
         </nav>
         <a
           href="#piloto-form"
-          className="inline-flex min-h-10 items-center rounded-lg bg-(--lp-accent) px-4 text-sm font-semibold text-(--lp-accent-ink) hover:opacity-90"
+          className="inline-flex min-h-8 items-center rounded-full bg-brand px-4 text-[13px] font-medium text-white transition-colors hover:bg-brand-dark"
         >
           {N.cta}
         </a>
@@ -116,66 +136,25 @@ export function Nav({ variante }: P) {
 
 /* ---------- 1. hero ---------- */
 
-export function Hero({ variante }: P) {
+export function Hero() {
   const H = LP.hero;
-  const provas = (
-    <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-(--lp-ink-2)">
-      {H.provas.map((p) => (
-        <li key={p} className="flex items-center gap-1.5">
-          <Check className="size-4 text-(--lp-accent)" aria-hidden />
-          {p}
-        </li>
-      ))}
-    </ul>
-  );
-
-  if (variante === "b") {
-    return (
-      <section className="pt-14 pb-10 sm:pt-20">
-        <Container className="flex flex-col items-center text-center">
-          <p className="rounded-full border border-(--lp-line) px-3 py-1 text-xs text-(--lp-muted)">{H.selo}</p>
-          <h1 className="mt-6 max-w-4xl text-5xl leading-[1.02] sm:text-6xl lg:text-7xl">{H.titulo}</h1>
-          <p className="mt-6 max-w-2xl text-lg text-(--lp-ink-2) sm:text-xl">{H.subtitulo}</p>
-          <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <BotaoCta>{H.ctaPrimario}</BotaoCta>
-            <BotaoCta href="#como-funciona" secundario>
-              {H.ctaSecundario}
-            </BotaoCta>
-          </div>
-          <div className="mt-6">{provas}</div>
-        </Container>
-        <Container className="mt-12 grid items-center gap-8 lg:grid-cols-[1fr_2fr]">
-          <Toque className="mx-auto max-w-[280px] lg:max-w-none" />
-          <div>
-            <PainelMock modo="compacto" />
-            <p className="mt-2 text-center text-xs text-(--lp-muted)">{H.legendaMock}</p>
-          </div>
-        </Container>
-      </section>
-    );
-  }
-
   return (
-    <section className="pt-12 pb-8 sm:pt-16 lg:pb-16">
-      <Container className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr] lg:gap-14">
-        <div>
-          <p className="inline-block rounded-full bg-(--lp-accent-soft) px-3 py-1 text-xs font-medium text-(--lp-accent)">
-            {H.selo}
-          </p>
-          <h1 className="mt-5 text-4xl leading-[1.05] font-bold sm:text-5xl lg:text-6xl">{H.titulo}</h1>
-          <p className="mt-5 max-w-xl text-lg text-(--lp-ink-2) sm:text-xl">{H.subtitulo}</p>
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-            <BotaoCta>{H.ctaPrimario}</BotaoCta>
-            <BotaoCta href="#como-funciona" secundario>
-              {H.ctaSecundario}
-            </BotaoCta>
-          </div>
-          <div className="mt-6">{provas}</div>
-          <Toque className="mt-8 max-w-[260px] lg:mt-12 lg:max-w-[300px]" />
+    <section id="topo" className="lp-secao bg-canvas pt-20! lg:pt-28!">
+      <Container className="text-center">
+        <p className="lp-eyebrow text-ink-muted">{H.selo}</p>
+        <h1 className="lp-h1 mx-auto mt-4 max-w-[14ch] text-ink">{H.titulo}</h1>
+        <p className="lp-lead mx-auto mt-6 max-w-[620px] text-ink-muted">{H.subtitulo}</p>
+        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-8">
+          <BotaoPrimario>{H.ctaPrimario}</BotaoPrimario>
+          <LinkSeta href="#como-funciona">{H.ctaSecundario}</LinkSeta>
         </div>
-        <div>
+        <p className="mx-auto mt-6 max-w-[560px] text-[15px] text-ink-muted">{H.provas.join(" · ")}</p>
+      </Container>
+
+      <Container className="mt-16 max-w-[1100px] lg:mt-24">
+        <div data-reveal>
           <PainelMock modo="compacto" />
-          <p className="mt-2 text-center text-xs text-(--lp-muted)">{H.legendaMock}</p>
+          <p className="mt-4 text-center text-[13px] text-ink-muted">{H.legendaMock}</p>
         </div>
       </Container>
     </section>
@@ -184,36 +163,20 @@ export function Hero({ variante }: P) {
 
 /* ---------- 2. problema ---------- */
 
-export function Problema({ variante }: P) {
+export function Problema() {
   const S = LP.problema;
   return (
-    <section className={cn("py-16 sm:py-20", variante === "a" && "bg-(--lp-bg-2)")}>
+    <section className="lp-secao bg-canvas-alt">
       <Container>
-        <Rotulo>{S.rotulo}</Rotulo>
-        <Titulo>{S.titulo}</Titulo>
-        {variante === "a" ? (
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {S.dores.map((d, i) => (
-              <div key={d.titulo} className="rounded-(--lp-radius) border border-(--lp-line) bg-(--lp-surface) p-6">
-                <span className="text-sm font-semibold text-(--lp-accent) tabular-nums">0{i + 1}</span>
-                <h3 className="mt-3 text-lg font-semibold">{d.titulo}</h3>
-                <p className="mt-2 text-(--lp-ink-2)">{d.texto}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <ol className="mt-10 divide-y divide-(--lp-line) border-y border-(--lp-line)">
-            {S.dores.map((d, i) => (
-              <li key={d.titulo} className="grid gap-2 py-6 sm:grid-cols-[4rem_1fr] sm:gap-6">
-                <span className="lp-display text-3xl text-(--lp-accent)">{i + 1}</span>
-                <div>
-                  <h3 className="text-xl font-semibold">{d.titulo}</h3>
-                  <p className="mt-2 max-w-2xl text-(--lp-ink-2)">{d.texto}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
+        <Cabecalho eyebrow={S.rotulo} titulo={S.titulo} />
+        <div className="mx-auto mt-16 grid max-w-[1040px] gap-10 md:grid-cols-3 md:gap-12 lg:mt-24" data-reveal>
+          {S.dores.map((d) => (
+            <div key={d.titulo} className="border-t border-hairline pt-6">
+              <h3 className="text-[21px] leading-snug font-semibold tracking-tight">{d.titulo}</h3>
+              <p className="mt-3 text-ink-muted">{d.texto}</p>
+            </div>
+          ))}
+        </div>
       </Container>
     </section>
   );
@@ -221,73 +184,41 @@ export function Problema({ variante }: P) {
 
 /* ---------- 3. como funciona ---------- */
 
-export function ComoFunciona({ variante }: P) {
+export function ComoFunciona() {
   const S = LP.comoFunciona;
-  const icones = [Nfc, Clock, Monitor];
   return (
-    <section id="como-funciona" className="scroll-mt-16 py-16 sm:py-20">
+    <section id="como-funciona" className="lp-secao scroll-mt-14 bg-canvas">
       <Container>
-        <Rotulo centro={variante === "b"}>{S.rotulo}</Rotulo>
-        <Titulo centro={variante === "b"}>{S.titulo}</Titulo>
-        {variante === "a" ? (
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {S.passos.map((p, i) => {
-              const Icone = icones[i];
-              return (
-                <div key={p.numero} className="relative rounded-(--lp-radius) border border-(--lp-line) bg-(--lp-surface) p-6">
-                  <div className="flex items-center justify-between">
-                    <span className="flex size-11 items-center justify-center rounded-full bg-(--lp-accent-soft) text-(--lp-accent)">
-                      <Icone className="size-5" aria-hidden />
-                    </span>
-                    <span className="text-5xl font-bold text-(--lp-line) tabular-nums">{p.numero}</span>
-                  </div>
-                  <h3 className="mt-5 text-xl font-semibold">{p.titulo}</h3>
-                  <p className="mt-2 text-(--lp-ink-2)">{p.texto}</p>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <ol className="mx-auto mt-12 max-w-3xl space-y-10">
-            {S.passos.map((p, i) => {
-              const Icone = icones[i];
-              return (
-                <li key={p.numero} className="grid gap-4 sm:grid-cols-[5rem_1fr] sm:gap-8">
-                  <div className="flex items-center gap-3 sm:flex-col sm:items-start">
-                    <span className="lp-display text-4xl text-(--lp-accent)">{p.numero}</span>
-                    <Icone className="size-6 text-(--lp-muted)" aria-hidden />
-                  </div>
-                  <div className="border-l border-(--lp-line) pl-5 sm:pl-8">
-                    <h3 className="text-2xl font-semibold">{p.titulo}</h3>
-                    <p className="mt-2 text-lg text-(--lp-ink-2)">{p.texto}</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-        <div className="mt-10 flex justify-center">
-          <BotaoCta>{LP.nav.cta}</BotaoCta>
+        <Cabecalho eyebrow={S.rotulo} titulo={S.titulo} />
+        <div className="mx-auto mt-14 max-w-[620px] lg:mt-20" data-reveal>
+          <Toque />
         </div>
+        <ol className="mx-auto mt-16 grid max-w-[1040px] gap-10 md:grid-cols-3 md:gap-12 lg:mt-24" data-reveal>
+          {S.passos.map((p) => (
+            <li key={p.numero}>
+              <p className="text-[15px] font-medium text-ink-muted tabular-nums">{p.numero}</p>
+              <h3 className="mt-2 text-[28px] font-semibold tracking-tight">{p.titulo}</h3>
+              <p className="mt-3 text-ink-muted">{p.texto}</p>
+            </li>
+          ))}
+        </ol>
       </Container>
     </section>
   );
 }
 
-/* ---------- 4. painel em destaque ---------- */
+/* ---------- 4. painel ---------- */
 
-export function Painel({ variante }: P) {
+export function Painel() {
   const S = LP.painel;
   return (
-    <section className={cn("py-16 sm:py-20", variante === "a" ? "bg-(--lp-bg-2)" : "bg-(--lp-bg-2)")}>
+    <section className="lp-secao bg-canvas-alt">
       <Container>
-        <div className={cn(variante === "b" && "text-center")}>
-          <Rotulo centro={variante === "b"}>{S.rotulo}</Rotulo>
-          <Titulo centro={variante === "b"}>{S.titulo}</Titulo>
-          <p className={cn("mt-4 max-w-2xl text-lg text-(--lp-ink-2)", variante === "b" && "mx-auto")}>{S.texto}</p>
+        <Cabecalho eyebrow={S.rotulo} titulo={S.titulo} texto={S.texto} />
+        <div className="mx-auto mt-14 max-w-[1120px] lg:mt-20" data-reveal>
+          <PainelMock />
+          <p className="mt-4 text-center text-[13px] text-ink-muted">{S.legenda}</p>
         </div>
-        <PainelMock className="mt-10" />
-        <p className="mt-3 text-center text-xs text-(--lp-muted)">{S.legenda}</p>
       </Container>
     </section>
   );
@@ -295,30 +226,21 @@ export function Painel({ variante }: P) {
 
 /* ---------- 5. usos ---------- */
 
-export function Usos({ variante }: P) {
+export function Usos() {
   const S = LP.usos;
   const icones = [UserRound, Star, MessageCircle, DoorOpen, ListChecks, ShieldCheck];
   return (
-    <section className="py-16 sm:py-20">
+    <section className="lp-secao bg-canvas">
       <Container>
-        <Rotulo>{S.rotulo}</Rotulo>
-        <Titulo>{S.titulo}</Titulo>
-        <ul className={cn("mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3", variante === "b" && "gap-px bg-(--lp-line) sm:gap-px")}>
+        <Cabecalho eyebrow={S.rotulo} titulo={S.titulo} />
+        <ul className="mt-14 grid gap-4 sm:grid-cols-2 lg:mt-20 lg:grid-cols-3 lg:gap-5" data-reveal>
           {S.casos.map((c, i) => {
             const Icone = icones[i];
             return (
-              <li
-                key={c.titulo}
-                className={cn(
-                  "flex gap-4 p-5",
-                  variante === "a" ? "rounded-(--lp-radius) border border-(--lp-line) bg-(--lp-surface)" : "bg-(--lp-bg)",
-                )}
-              >
-                <Icone className="mt-0.5 size-5 shrink-0 text-(--lp-accent)" aria-hidden />
-                <div>
-                  <h3 className="font-semibold">{c.titulo}</h3>
-                  <p className="mt-1 text-sm text-(--lp-ink-2)">{c.texto}</p>
-                </div>
+              <li key={c.titulo} className="rounded-[24px] bg-canvas-alt p-8 lg:p-10">
+                <Icone className="size-7 text-ink" strokeWidth={1.6} aria-hidden />
+                <h3 className="mt-6 text-[21px] font-semibold tracking-tight">{c.titulo}</h3>
+                <p className="mt-2 text-ink-muted">{c.texto}</p>
               </li>
             );
           })}
@@ -328,33 +250,31 @@ export function Usos({ variante }: P) {
   );
 }
 
-/* ---------- 6. privacidade ---------- */
+/* ---------- 6. privacidade (seção escura) ---------- */
 
-export function Privacidade({ variante }: P) {
+export function Privacidade() {
   const S = LP.privacidade;
   return (
-    <section id="privacidade" className={cn("scroll-mt-16 py-16 sm:py-20", "bg-(--lp-bg-2)")}>
-      <Container className={cn("grid gap-10 lg:grid-cols-2 lg:items-start lg:gap-16", variante === "b" && "lg:[&>*:first-child]:order-2")}>
-        <div>
-          <Rotulo>{S.rotulo}</Rotulo>
-          <Titulo>{S.titulo}</Titulo>
-          <p className="mt-4 text-lg text-(--lp-ink-2)">{S.texto}</p>
-          <ul className="mt-8 space-y-5">
-            {S.garantias.map((g) => (
-              <li key={g.titulo} className="flex gap-3">
-                <ShieldCheck className="mt-1 size-5 shrink-0 text-(--lp-accent)" aria-hidden />
-                <div>
-                  <h3 className="font-semibold">{g.titulo}</h3>
-                  <p className="mt-1 text-sm text-(--lp-ink-2)">{g.texto}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-8 text-lg font-semibold">{S.fechamento}</p>
-        </div>
-        <div className="lg:sticky lg:top-24">
+    <section id="privacidade" className="lp-secao lp-escuro scroll-mt-14 bg-brand-dark text-white">
+      <Container>
+        <Cabecalho escuro eyebrow={S.rotulo} titulo={S.titulo} texto={S.texto} />
+        <div className="mx-auto mt-14 max-w-[640px] lg:mt-20" data-reveal>
           <DemoMascara />
         </div>
+        <ul className="mx-auto mt-16 grid max-w-[1040px] gap-x-12 gap-y-10 sm:grid-cols-2 lg:mt-24" data-reveal>
+          {S.garantias.map((g) => (
+            <li key={g.titulo} className="flex gap-4">
+              <ShieldCheck className="mt-1 size-6 shrink-0 text-brand-light" strokeWidth={1.6} aria-hidden />
+              <div>
+                <h3 className="text-[19px] font-semibold tracking-tight">{g.titulo}</h3>
+                <p className="mt-2 text-white/80">{g.texto}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <p className="lp-lead mx-auto mt-16 max-w-[680px] text-center font-semibold text-brand-light lg:mt-24" data-reveal>
+          {S.fechamento}
+        </p>
       </Container>
     </section>
   );
@@ -362,64 +282,58 @@ export function Privacidade({ variante }: P) {
 
 /* ---------- 7. canais ---------- */
 
-export function Canais({ variante }: P) {
+export function Canais() {
   const S = LP.canais;
   const icDisp = [Nfc, QrCode, Keyboard];
   const icBreve = [MessageCircle, Monitor, DoorOpen, Plug];
   return (
-    <section className="py-16 sm:py-20">
+    <section className="lp-secao bg-canvas">
       <Container>
-        <Rotulo centro={variante === "b"}>{S.rotulo}</Rotulo>
-        <Titulo centro={variante === "b"}>{S.titulo}</Titulo>
+        <Cabecalho eyebrow={S.rotulo} titulo={S.titulo} />
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-[3fr_4fr]">
-          <div>
-            <p className="flex items-center gap-2 text-sm font-semibold text-(--lp-accent)">
-              <Check className="size-4" aria-hidden /> {S.disponivelRotulo}
-            </p>
-            <ul className="mt-3 grid gap-3">
-              {S.disponiveis.map((c, i) => {
-                const Icone = icDisp[i];
-                return (
-                  <li key={c.titulo} className="flex items-center gap-4 rounded-(--lp-radius) border-2 border-(--lp-accent)/60 bg-(--lp-surface) p-4">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-(--lp-accent) text-(--lp-accent-ink)">
-                      <Icone className="size-5" aria-hidden />
-                    </span>
-                    <div>
-                      <h3 className="font-semibold">{c.titulo}</h3>
-                      <p className="text-sm text-(--lp-ink-2)">{c.texto}</p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-          <div>
-            <p className="flex items-center gap-2 text-sm font-semibold text-(--lp-muted)">
-              <Clock className="size-4" aria-hidden /> {S.emBreveRotulo}
-            </p>
-            <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-              {S.emBreve.map((c, i) => {
-                const Icone = icBreve[i];
-                return (
-                  <li key={c.titulo} className="flex items-center gap-4 rounded-(--lp-radius) border border-dashed border-(--lp-line) p-4 text-(--lp-muted)">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-dashed border-(--lp-line)">
-                      <Icone className="size-5" aria-hidden />
-                    </span>
-                    <div>
-                      <h3 className="flex flex-wrap items-center gap-2 font-semibold text-(--lp-ink-2)">
-                        {c.titulo}
-                        <span className="rounded-full border border-(--lp-line) px-2 py-0.5 text-[10px] tracking-wide uppercase">
-                          {S.emBreveRotulo}
-                        </span>
-                      </h3>
-                      <p className="text-sm">{c.texto}</p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+        <div className="mx-auto mt-14 max-w-[1040px] lg:mt-20" data-reveal>
+          <p className="flex items-center gap-2 text-[15px] font-semibold text-ink">
+            <span className="flex size-5 items-center justify-center rounded-full bg-brand text-white">
+              <Check className="size-3.5" strokeWidth={3} aria-hidden />
+            </span>
+            {S.disponivelRotulo}
+          </p>
+          <ul className="mt-5 grid gap-4 md:grid-cols-3">
+            {S.disponiveis.map((c, i) => {
+              const Icone = icDisp[i];
+              return (
+                <li key={c.titulo} className="rounded-[24px] border-2 border-brand p-7">
+                  <span className="flex size-12 items-center justify-center rounded-full bg-brand text-white">
+                    <Icone className="size-6" aria-hidden />
+                  </span>
+                  <h3 className="mt-5 text-[21px] font-semibold tracking-tight">{c.titulo}</h3>
+                  <p className="mt-1 text-ink-muted">{c.texto}</p>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div className="mx-auto mt-14 max-w-[1040px]" data-reveal>
+          <p className="flex items-center gap-2 text-[15px] font-semibold text-ink-muted">
+            <Clock className="size-5" aria-hidden />
+            {S.emBreveRotulo}
+          </p>
+          <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {S.emBreve.map((c, i) => {
+              const Icone = icBreve[i];
+              return (
+                <li key={c.titulo} className="rounded-[24px] border border-dashed border-ink-muted/40 p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <Icone className="size-6 text-ink-muted" strokeWidth={1.6} aria-hidden />
+                    <SeloEmBreve />
+                  </div>
+                  <h3 className="mt-5 text-[17px] font-semibold text-ink-muted">{c.titulo}</h3>
+                  <p className="mt-1 text-[15px] text-ink-muted">{c.texto}</p>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       </Container>
     </section>
@@ -428,30 +342,21 @@ export function Canais({ variante }: P) {
 
 /* ---------- 8. visão ---------- */
 
-export function Visao({ variante }: P) {
+export function Visao() {
   const S = LP.visao;
   const icones = [Package, Tag, Users, Bell, MessageCircle, BookOpen];
   return (
-    <section className="bg-(--lp-bg-2) py-16 sm:py-20">
+    <section className="lp-secao bg-canvas-alt">
       <Container>
-        <div className="flex flex-wrap items-center gap-3">
-          <Rotulo>{S.rotulo}</Rotulo>
-          <span className="rounded-full border border-dashed border-(--lp-line) px-2 py-0.5 text-[10px] tracking-wide text-(--lp-muted) uppercase">
-            {LP.canais.emBreveRotulo}
-          </span>
-        </div>
-        <Titulo>{S.titulo}</Titulo>
-        <p className="mt-4 max-w-2xl text-lg text-(--lp-ink-2)">{S.texto}</p>
-        <ul className={cn("mt-10 grid gap-3", variante === "a" ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2")}>
+        <Cabecalho eyebrow={S.rotulo} titulo={S.titulo} texto={S.texto} extra={<SeloEmBreve />} />
+        <ul className="mx-auto mt-14 grid max-w-[1040px] gap-4 sm:grid-cols-2 lg:mt-20 lg:grid-cols-3" data-reveal>
           {S.itens.map((it, i) => {
             const Icone = icones[i];
             return (
-              <li key={it.titulo} className="flex gap-4 rounded-(--lp-radius) border border-dashed border-(--lp-line) p-5">
-                <Icone className="mt-0.5 size-5 shrink-0 text-(--lp-muted)" aria-hidden />
-                <div>
-                  <h3 className="font-semibold text-(--lp-ink-2)">{it.titulo}</h3>
-                  <p className="mt-1 text-sm text-(--lp-muted)">{it.texto}</p>
-                </div>
+              <li key={it.titulo} className="rounded-[24px] border border-dashed border-ink-muted/40 p-7">
+                <Icone className="size-6 text-ink-muted" strokeWidth={1.6} aria-hidden />
+                <h3 className="mt-5 text-[17px] font-semibold">{it.titulo}</h3>
+                <p className="mt-1 text-[15px] text-ink-muted">{it.texto}</p>
               </li>
             );
           })}
@@ -463,33 +368,24 @@ export function Visao({ variante }: P) {
 
 /* ---------- 9. piloto ---------- */
 
-export function Piloto({ variante }: P) {
+export function Piloto() {
   const S = LP.piloto;
   return (
-    <section id="piloto" className="scroll-mt-16 py-16 sm:py-20">
+    <section id="piloto" className="lp-secao scroll-mt-14 bg-canvas">
       <Container>
-        <div
-          className={cn(
-            "rounded-(--lp-radius) p-6 sm:p-10",
-            variante === "a" ? "bg-(--lp-ink) text-white" : "border border-(--lp-accent)/50 bg-(--lp-accent-soft)",
-          )}
-        >
-          <p className="text-xs font-semibold tracking-[0.14em] text-(--lp-accent) uppercase">{S.rotulo}</p>
-          <h2 className="mt-3 max-w-2xl text-3xl leading-tight font-bold sm:text-4xl">{S.titulo}</h2>
-          <p className={cn("mt-4 max-w-2xl text-lg", variante === "a" ? "text-white/75" : "text-(--lp-ink-2)")}>{S.texto}</p>
-          <ol className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {S.etapas.map((e, i) => (
-              <li key={e.titulo} className={cn("border-t pt-4", variante === "a" ? "border-white/20" : "border-(--lp-accent)/40")}>
-                <span className="text-sm font-semibold text-(--lp-accent) tabular-nums">0{i + 1}</span>
-                <h3 className="mt-2 font-semibold">{e.titulo}</h3>
-                <p className={cn("mt-1 text-sm", variante === "a" ? "text-white/75" : "text-(--lp-ink-2)")}>{e.texto}</p>
-              </li>
-            ))}
-          </ol>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <BotaoCta>{S.cta}</BotaoCta>
-            <span className={cn("text-sm", variante === "a" ? "text-white/60" : "text-(--lp-muted)")}>{S.investimento}</span>
-          </div>
+        <Cabecalho eyebrow={S.rotulo} titulo={S.titulo} texto={S.texto} />
+        <ol className="mx-auto mt-14 grid max-w-[1040px] gap-10 sm:grid-cols-2 lg:mt-20 lg:grid-cols-4 lg:gap-8" data-reveal>
+          {S.etapas.map((e, i) => (
+            <li key={e.titulo} className="border-t border-hairline pt-6">
+              <p className="text-[15px] font-medium text-ink-muted tabular-nums">0{i + 1}</p>
+              <h3 className="mt-2 text-[19px] font-semibold tracking-tight">{e.titulo}</h3>
+              <p className="mt-2 text-[15px] text-ink-muted">{e.texto}</p>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-14 flex flex-col items-center gap-3 lg:mt-20" data-reveal>
+          <BotaoPrimario>{S.cta}</BotaoPrimario>
+          <p className="text-[15px] text-ink-muted">{S.investimento}</p>
         </div>
       </Container>
     </section>
@@ -500,33 +396,32 @@ export function Piloto({ variante }: P) {
 
 export function ProvaSocial() {
   const S = LP.provaSocial;
-  const caixa = "rounded-(--lp-radius) border-2 border-dashed border-(--lp-line) p-6 text-(--lp-muted)";
+  const caixa = "rounded-[24px] border-2 border-dashed border-ink-muted/30 p-8 text-ink-muted";
   return (
-    <section className="py-16 sm:py-20">
+    <section className="lp-secao bg-canvas-alt">
       <Container>
-        <Rotulo>{S.rotulo}</Rotulo>
-        <Titulo>{S.titulo}</Titulo>
-        <div className="mt-10 grid gap-4 lg:grid-cols-[3fr_2fr]">
-          <figure className={cn(caixa, "flex flex-col justify-between")}>
-            <blockquote className="text-xl">“{S.depoimento}”</blockquote>
-            <figcaption className="mt-6 text-sm">{S.autor}</figcaption>
+        <Cabecalho eyebrow={S.rotulo} titulo={S.titulo} />
+        <div className="mx-auto mt-14 max-w-[1040px] lg:mt-20" data-reveal>
+          <figure className={cn(caixa, "text-center")}>
+            <blockquote className="lp-lead">“{S.depoimento}”</blockquote>
+            <figcaption className="mt-4 text-[15px]">{S.autor}</figcaption>
           </figure>
-          <div className="grid gap-4">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {S.numeros.map((n, i) => (
-              <div key={i} className={caixa}>
-                <p className="text-2xl font-bold">{n.valor}</p>
-                <p className="mt-1 text-sm">{n.rotulo}</p>
+              <div key={i} className={cn(caixa, "text-center")}>
+                <p className="text-[28px] font-semibold tracking-tight">{n.valor}</p>
+                <p className="mt-1 text-[15px]">{n.rotulo}</p>
               </div>
             ))}
           </div>
+          <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {S.logos.map((l, i) => (
+              <li key={i} className={cn(caixa, "flex min-h-24 items-center justify-center text-center text-[15px]")}>
+                {l}
+              </li>
+            ))}
+          </ul>
         </div>
-        <ul className="mt-4 grid grid-cols-3 gap-4">
-          {S.logos.map((l, i) => (
-            <li key={i} className={cn(caixa, "flex min-h-20 items-center justify-center text-center text-sm")}>
-              {l}
-            </li>
-          ))}
-        </ul>
       </Container>
     </section>
   );
@@ -534,21 +429,20 @@ export function ProvaSocial() {
 
 /* ---------- 11. faq ---------- */
 
-export function Faq({ variante }: P) {
+export function Faq() {
   const S = LP.faq;
   return (
-    <section id="perguntas" className="scroll-mt-16 bg-(--lp-bg-2) py-16 sm:py-20">
-      <Container className="max-w-3xl">
-        <Rotulo centro={variante === "b"}>{S.rotulo}</Rotulo>
-        <Titulo centro={variante === "b"}>{S.titulo}</Titulo>
-        <div className="mt-10 divide-y divide-(--lp-line) border-y border-(--lp-line)">
+    <section id="perguntas" className="lp-secao scroll-mt-14 bg-canvas">
+      <Container>
+        <Cabecalho eyebrow={S.rotulo} titulo={S.titulo} />
+        <div className="mx-auto mt-14 max-w-[680px] divide-y divide-hairline border-y border-hairline lg:mt-20" data-reveal>
           {S.itens.map((it) => (
-            <details key={it.pergunta} className="group">
-              <summary className="flex cursor-pointer items-center justify-between gap-4 py-5 text-left text-lg font-semibold">
+            <details key={it.pergunta}>
+              <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-6 py-6 text-left text-[19px] font-semibold tracking-tight">
                 {it.pergunta}
-                <ChevronDown className="lp-chevron size-5 shrink-0 text-(--lp-muted) transition-transform" aria-hidden />
+                <ChevronDown className="lp-chevron size-5 shrink-0 text-ink-muted transition-transform" aria-hidden />
               </summary>
-              <p className="pb-5 text-(--lp-ink-2)">{it.resposta}</p>
+              <p className="pb-7 text-ink-muted">{it.resposta}</p>
             </details>
           ))}
         </div>
@@ -557,54 +451,44 @@ export function Faq({ variante }: P) {
   );
 }
 
-/* ---------- 12. cta final ---------- */
+/* ---------- 12. cta final + rodapé (seção escura) ---------- */
 
-export function CtaFinal({ variante }: P) {
+export function CtaFinal() {
   const S = LP.ctaFinal;
-  return (
-    <section id="piloto-form" className="scroll-mt-16 py-16 sm:py-24">
-      <Container className="grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
-        <div>
-          <Rotulo>{LP.piloto.rotulo}</Rotulo>
-          <Titulo>{S.titulo}</Titulo>
-          <p className="mt-4 text-lg text-(--lp-ink-2)">{S.texto}</p>
-          <Toque className={cn("mt-8 max-w-[240px]", variante === "b" && "opacity-90")} />
-        </div>
-        <div className="rounded-(--lp-radius) border border-(--lp-line) bg-(--lp-surface) p-6 sm:p-8">
-          <FormPiloto idPrefixo={variante} />
-        </div>
-      </Container>
-    </section>
-  );
-}
-
-/* ---------- rodapé ---------- */
-
-export function Rodape({ variante }: P) {
   const R = LP.rodape;
   return (
-    <footer className="border-t border-(--lp-line) py-10 text-sm text-(--lp-muted)">
-      <Container className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="lp-display text-lg font-bold text-(--lp-ink)">{R.marca}</p>
-          <p className="mt-1">{R.frase}</p>
-          <ul className="mt-4 space-y-1">
-            {R.linhas.map((l) => (
-              <li key={l}>{l}</li>
-            ))}
-            <li>{R.politica}</li>
-          </ul>
-        </div>
-        <div className="flex items-center gap-3">
-          <span>{R.direcoes.comparar}</span>
-          <Link href="/lp" className={cn("rounded-md border px-2.5 py-1", variante === "a" ? "border-(--lp-accent) text-(--lp-accent)" : "border-(--lp-line)")}>
-            {R.direcoes.a}
-          </Link>
-          <Link href="/lp/b" className={cn("rounded-md border px-2.5 py-1", variante === "b" ? "border-(--lp-accent) text-(--lp-accent)" : "border-(--lp-line)")}>
-            {R.direcoes.b}
-          </Link>
-        </div>
-      </Container>
-    </footer>
+    <section id="piloto-form" className="lp-escuro scroll-mt-14 bg-brand-dark text-white">
+      <div className="lp-secao">
+        <Container className="text-center">
+          {/* Logo com ®, 28px de altura e no mínimo 28px de respiro em todos os lados. */}
+          <div className="flex justify-center p-7" data-reveal>
+            <Logo altura={28} versao="registrada" />
+          </div>
+          <h2 className="lp-h2 mx-auto mt-10 max-w-[760px]" data-reveal>
+            {S.titulo}
+          </h2>
+          <p className="lp-lead mx-auto mt-5 max-w-[620px] text-white/80" data-reveal>
+            {S.texto}
+          </p>
+          <div className="mx-auto mt-12 max-w-[640px] rounded-[28px] bg-canvas p-6 sm:p-10 lg:mt-16" data-reveal>
+            <FormPiloto />
+          </div>
+        </Container>
+      </div>
+
+      <footer className="border-t border-white/15 py-12 text-[13px] text-white/75">
+        <Container className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[15px] font-medium text-white">{R.frase}</p>
+            <ul className="mt-3 space-y-1">
+              {R.linhas.map((l) => (
+                <li key={l}>{l}</li>
+              ))}
+            </ul>
+          </div>
+          <p>{R.politica}</p>
+        </Container>
+      </footer>
+    </section>
   );
 }

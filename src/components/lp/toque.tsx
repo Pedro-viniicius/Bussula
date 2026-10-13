@@ -1,56 +1,42 @@
 import { cn } from "@/lib/utils";
 
 /**
- * O gesto do produto: um celular encostando no cartão. Só formas e três
- * ondas, nas cores da direção. Nada de robôs, cérebros ou partículas.
+ * O gesto do produto: o celular encostando no cartão NFC da equipe.
+ * O cartão é azul-escuro e leva o logo oficial (branco) sem alteração,
+ * reto e com área de proteção maior que a altura do logo.
  */
-export function Toque({ className, legenda }: { className?: string; legenda?: string }) {
+export function Toque({ className, rotulo = "Celular encostando no cartão NFC da equipe" }: { className?: string; rotulo?: string }) {
   return (
-    <figure className={cn("flex flex-col items-center gap-3", className)}>
-      <svg
-        viewBox="0 0 320 240"
-        role="img"
-        aria-label="Celular encostando no cartão NFC"
-        className="h-auto w-full max-w-[320px]"
-      >
-        {/* Cartão */}
-        <g transform="translate(40 128) rotate(-8)">
-          <rect x="0" y="0" width="150" height="94" rx="10" fill="var(--lp-surface)" stroke="var(--lp-line)" strokeWidth="2" />
-          <rect x="14" y="16" width="34" height="24" rx="4" fill="var(--lp-accent-soft)" stroke="var(--lp-accent)" strokeWidth="1.5" />
-          <rect x="14" y="60" width="78" height="6" rx="3" fill="var(--lp-line)" />
-          <rect x="14" y="72" width="52" height="6" rx="3" fill="var(--lp-line)" />
-          <text x="136" y="80" textAnchor="end" fontSize="11" fontWeight="700" fill="var(--lp-ink)" fontFamily="var(--lp-display)">
-            bussula
-          </text>
-        </g>
+    <svg viewBox="0 0 360 260" role="img" aria-label={rotulo} className={cn("h-auto w-full", className)}>
+      {/* Cartão NFC */}
+      <g transform="translate(24 120)">
+        <rect width="190" height="120" rx="14" fill="var(--color-brand-dark)" />
+        <rect x="18" y="18" width="38" height="28" rx="6" fill="var(--color-brand-light)" />
+        <image href="/brand/bussola-logo-branco.png" x="98" y="88" width="74" height="15" preserveAspectRatio="xMinYMid meet" />
+      </g>
 
-        {/* Ondas NFC */}
-        <g fill="none" stroke="var(--lp-accent)" strokeWidth="3" strokeLinecap="round">
-          <path className="lp-wave" d="M150 96 a28 28 0 0 1 0 40" />
-          <path className="lp-wave" d="M160 84 a44 44 0 0 1 0 64" />
-          <path className="lp-wave" d="M170 72 a60 60 0 0 1 0 88" />
-        </g>
+      {/* Ondas de aproximação */}
+      <g fill="none" stroke="var(--color-brand)" strokeWidth="3.5" strokeLinecap="round">
+        <path className="lp-wave" d="M196 108 a30 30 0 0 1 0 44" />
+        <path className="lp-wave" d="M208 94 a48 48 0 0 1 0 72" />
+        <path className="lp-wave" d="M220 80 a66 66 0 0 1 0 100" />
+      </g>
 
-        {/* Celular */}
-        <g transform="translate(196 28) rotate(10)">
-          <rect x="0" y="0" width="92" height="184" rx="18" fill="var(--lp-ink)" />
-          <rect x="6" y="6" width="80" height="172" rx="14" fill="var(--lp-surface)" />
-          <rect x="30" y="12" width="32" height="6" rx="3" fill="var(--lp-ink)" opacity="0.6" />
-          {/* Tela do formulário */}
-          <rect x="16" y="34" width="44" height="7" rx="3.5" fill="var(--lp-ink)" opacity="0.85" />
-          <rect x="16" y="50" width="60" height="12" rx="4" fill="var(--lp-bg-2)" stroke="var(--lp-line)" />
-          <rect x="16" y="68" width="60" height="12" rx="4" fill="var(--lp-bg-2)" stroke="var(--lp-line)" />
-          <rect x="16" y="90" width="10" height="10" rx="2" fill="none" stroke="var(--lp-ink)" strokeWidth="1.5" opacity="0.6" />
-          <rect x="30" y="92" width="44" height="6" rx="3" fill="var(--lp-line)" />
-          <rect x="16" y="106" width="10" height="10" rx="2" fill="none" stroke="var(--lp-ink)" strokeWidth="1.5" opacity="0.6" />
-          <rect x="30" y="108" width="36" height="6" rx="3" fill="var(--lp-line)" />
-          <rect x="16" y="140" width="60" height="18" rx="6" fill="var(--lp-accent)" />
-          <rect x="34" y="147" width="24" height="4" rx="2" fill="var(--lp-accent-ink)" />
-        </g>
-      </svg>
-      {legenda && (
-        <figcaption className="text-center text-sm text-(--lp-muted)">{legenda}</figcaption>
-      )}
-    </figure>
+      {/* Celular */}
+      <g transform="translate(232 18) rotate(9)">
+        <rect width="100" height="204" rx="20" fill="var(--color-ink)" />
+        <rect x="6" y="6" width="88" height="192" rx="15" fill="#ffffff" />
+        <rect x="36" y="13" width="28" height="6" rx="3" fill="var(--color-ink)" opacity="0.7" />
+        <rect x="16" y="36" width="50" height="8" rx="4" fill="var(--color-ink)" />
+        <rect x="16" y="54" width="68" height="14" rx="5" fill="var(--color-canvas-alt)" stroke="var(--color-hairline)" />
+        <rect x="16" y="74" width="68" height="14" rx="5" fill="var(--color-canvas-alt)" stroke="var(--color-hairline)" />
+        <rect x="16" y="98" width="11" height="11" rx="3" fill="none" stroke="var(--color-ink-muted)" strokeWidth="1.5" />
+        <rect x="32" y="101" width="48" height="5" rx="2.5" fill="var(--color-hairline)" />
+        <rect x="16" y="116" width="11" height="11" rx="3" fill="none" stroke="var(--color-ink-muted)" strokeWidth="1.5" />
+        <rect x="32" y="119" width="38" height="5" rx="2.5" fill="var(--color-hairline)" />
+        <rect x="16" y="160" width="68" height="20" rx="10" fill="var(--color-brand)" />
+        <rect x="36" y="168" width="28" height="4" rx="2" fill="#ffffff" />
+      </g>
+    </svg>
   );
 }

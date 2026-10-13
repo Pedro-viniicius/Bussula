@@ -1,42 +1,29 @@
-import { cn } from "@/lib/utils";
-import {
-  Canais,
-  ComoFunciona,
-  CtaFinal,
-  Faq,
-  Hero,
-  Nav,
-  Painel,
-  Piloto,
-  Privacidade,
-  Problema,
-  ProvaSocial,
-  Rodape,
-  Usos,
-  Visao,
-  type Variante,
-} from "./secoes";
+import { Canais, ComoFunciona, CtaFinal, Faq, Hero, Nav, Painel, Piloto, Privacidade, Problema, ProvaSocial, Usos, Visao } from "./secoes";
+import { RevelarAoRolar } from "./revelar";
 
-/** A ordem das seções é a mesma nas duas direções; muda a roupa, não a história. */
-export function PaginaLp({ variante }: { variante: Variante }) {
+/**
+ * Ritmo de fundos: branco e cinza-claro se alternam; as duas seções
+ * azul-escuras (privacidade e convite final) são os pontos de contraste.
+ */
+export function PaginaLp() {
   return (
-    <div className={cn("lp min-h-full flex-1", variante === "a" ? "lp-a" : "lp-b")}>
-      <Nav variante={variante} />
+    <div className="lp min-h-full flex-1">
+      <Nav />
       <main>
-        <Hero variante={variante} />
-        <Problema variante={variante} />
-        <ComoFunciona variante={variante} />
-        <Painel variante={variante} />
-        <Usos variante={variante} />
-        <Privacidade variante={variante} />
-        <Canais variante={variante} />
-        <Visao variante={variante} />
-        <Piloto variante={variante} />
+        <Hero />
+        <Problema />
+        <ComoFunciona />
+        <Painel />
+        <Usos />
+        <Privacidade />
+        <Canais />
+        <Visao />
+        <Piloto />
         <ProvaSocial />
-        <Faq variante={variante} />
-        <CtaFinal variante={variante} />
+        <Faq />
       </main>
-      <Rodape variante={variante} />
+      <CtaFinal />
+      <RevelarAoRolar />
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import { PaginaLp } from "@/components/lp/pagina";
+import { permanentRedirect } from "next/navigation";
 
-/** Direção B: "Painel noturno". Fundo grafite, serifa nos títulos, âmbar como destaque. */
-export default function LandingB() {
-  return <PaginaLp variante="b" />;
+// A comparação entre duas direções acabou: a identidade Bússola é a única. Links antigos caem em /lp.
+export default function DirecaoBAntiga() {
+  permanentRedirect("/lp");
 }

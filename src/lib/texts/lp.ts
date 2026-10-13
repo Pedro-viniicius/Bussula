@@ -1,5 +1,5 @@
 /**
- * Copy da landing page (/lp e /lp/b). Tudo em pt-BR.
+ * Copy da landing page (/lp). Tudo em pt-BR.
  *
  * Regras:
  * - O que está entre colchetes é placeholder e precisa ser trocado antes de
@@ -13,13 +13,13 @@ export const WHATSAPP_NUMERO = "";
 
 export const LP = {
   meta: {
-    titulo: "Bussula · Decida com o que o seu cliente acabou de dizer",
+    titulo: "Bússola · Decida com o que o seu cliente acabou de dizer",
     descricao:
       "O cliente encosta o celular no cartão, responde em menos de 40 segundos e você vê no painel o que merece atenção. Sem app, com consentimento registrado e privacidade levada a sério.",
   },
 
   nav: {
-    marca: "Bussula",
+    marca: "Bússola",
     comoFunciona: "Como funciona",
     privacidade: "Privacidade",
     piloto: "Piloto",
@@ -207,7 +207,7 @@ export const LP = {
 
   visao: {
     rotulo: "Visão de produto",
-    titulo: "Para onde o Bussula vai",
+    titulo: "Para onde a Bússola vai",
     texto:
       "Hoje o produto captura e organiza. O próximo passo é ler esses dados junto com os seus números de venda.",
     itens: [
@@ -264,7 +264,7 @@ export const LP = {
       {
         pergunta: "Como fica a LGPD? Quem responde pelos dados?",
         resposta:
-          "A sua empresa continua sendo a responsável pelos dados dos seus clientes. O Bussula faz a parte prática: pede cada consentimento em separado, guarda a versão do texto aceito, esconde o contato por padrão, registra quem revelou ou exportou e anonimiza tudo no prazo que você definir.",
+          "A sua empresa continua sendo a responsável pelos dados dos seus clientes. A Bússola faz a parte prática: pede cada consentimento em separado, guarda a versão do texto aceito, esconde o contato por padrão, registra quem revelou ou exportou e anonimiza tudo no prazo que você definir.",
       },
       {
         pergunta: "Preciso de equipe técnica?",
@@ -300,15 +300,14 @@ export const LP = {
     whatsappPendente: "[número de WhatsApp a definir]",
     enviado: "Pronto. Seu WhatsApp abriu com a mensagem preenchida.",
     mensagem: (nome: string, empresa: string) =>
-      `Olá! Sou ${nome}, da ${empresa}. Quero saber mais sobre o piloto do Bussula.`,
+      `Olá! Sou ${nome}, da ${empresa}. Quero saber mais sobre o piloto da Bússola.`,
     aviso: "Usamos seu contato só para responder a este pedido.",
   },
 
   rodape: {
-    marca: "Bussula",
+    marca: "Bússola",
     frase: "Dados reais do atendimento presencial.",
     linhas: ["[razão social e CNPJ]", "[cidade e estado]", "[e-mail de contato]"],
     politica: "[Política de privacidade]",
-    direcoes: { a: "Direção A", b: "Direção B", comparar: "Comparar direções:" },
   },
 } as const;

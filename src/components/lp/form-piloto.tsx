@@ -15,7 +15,7 @@ function linkWhatsapp(texto?: string) {
  * Formulário curto (nome, empresa, WhatsApp). Não grava nada: monta a mensagem
  * e abre o WhatsApp do time. Enquanto o número não existe, avisa em vez de falhar.
  */
-export function FormPiloto({ idPrefixo = "cta" }: { idPrefixo?: string }) {
+export function FormPiloto() {
   const [estado, setEstado] = useState<"inicial" | "enviado" | "semNumero">("inicial");
   const temNumero = WHATSAPP_NUMERO.length > 0;
 
@@ -33,61 +33,48 @@ export function FormPiloto({ idPrefixo = "cta" }: { idPrefixo?: string }) {
   }
 
   const campo =
-    "mt-1 block w-full rounded-lg border border-(--lp-line) bg-(--lp-bg) px-3 py-3 text-base text-(--lp-ink) placeholder:text-(--lp-muted)";
+    "mt-2 block w-full rounded-xl border border-hairline bg-canvas-alt px-4 py-3.5 text-[17px] text-ink placeholder:text-ink-muted focus:border-brand focus:bg-canvas focus:outline-none";
 
   return (
-    <form onSubmit={enviar} className="space-y-4" noValidate={false}>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block text-sm font-medium">
+    <form onSubmit={enviar} className="space-y-5 text-left">
+      <div className="grid gap-5 sm:grid-cols-2">
+        <label className="block text-[15px] font-medium text-ink">
           {T.campos.nome}
-          <input id={`${idPrefixo}-nome`} name="nome" required autoComplete="name" placeholder={T.campos.nomePlaceholder} className={campo} />
+          <input name="nome" required autoComplete="name" placeholder={T.campos.nomePlaceholder} className={campo} />
         </label>
-        <label className="block text-sm font-medium">
+        <label className="block text-[15px] font-medium text-ink">
           {T.campos.empresa}
-          <input id={`${idPrefixo}-empresa`} name="empresa" required autoComplete="organization" placeholder={T.campos.empresaPlaceholder} className={campo} />
+          <input name="empresa" required autoComplete="organization" placeholder={T.campos.empresaPlaceholder} className={campo} />
         </label>
       </div>
-      <label className="block text-sm font-medium">
+      <label className="block text-[15px] font-medium text-ink">
         {T.campos.whatsapp}
-        <input
-          id={`${idPrefixo}-whatsapp`}
-          name="whatsapp"
-          type="tel"
-          required
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder={T.campos.whatsappPlaceholder}
-          className={campo}
-        />
+        <input name="whatsapp" type="tel" required inputMode="tel" autoComplete="tel" placeholder={T.campos.whatsappPlaceholder} className={campo} />
       </label>
 
       <button
         type="submit"
-        className="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-(--lp-accent) px-6 text-base font-semibold whitespace-nowrap text-(--lp-accent-ink) hover:opacity-90"
+        className="inline-flex min-h-13 w-full items-center justify-center rounded-full bg-brand px-7 text-[17px] font-medium text-white transition-colors hover:bg-brand-dark active:bg-brand-dark"
       >
         {T.botao}
       </button>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <span className="text-sm text-(--lp-muted)">{T.ouWhatsapp}</span>
+
+      <div className="flex flex-col items-center gap-2 text-center sm:flex-row sm:justify-center sm:gap-3">
+        <span className="text-[15px] text-ink-muted">{T.ouWhatsapp}</span>
         {temNumero ? (
-          <a
-            href={linkWhatsapp()}
-            target="_blank"
-            rel="noopener"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-(--lp-line) px-5 text-base font-medium hover:border-(--lp-accent)"
-          >
-            <MessageCircle className="size-5" aria-hidden />
+          <a href={linkWhatsapp()} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 text-[15px] font-medium text-brand hover:underline">
+            <MessageCircle className="size-4" aria-hidden />
             {T.whatsappBotao}
           </a>
         ) : (
-          <span className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-dashed border-(--lp-line) px-5 text-sm text-(--lp-muted)">
-            <MessageCircle className="size-5" aria-hidden />
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-hairline px-3 py-1 text-[14px] text-ink-muted">
+            <MessageCircle className="size-4" aria-hidden />
             {T.whatsappPendente}
           </span>
         )}
       </div>
 
-      <p className="text-xs text-(--lp-muted)" aria-live="polite">
+      <p className="text-center text-[13px] text-ink-muted" aria-live="polite">
         {estado === "enviado" ? T.enviado : estado === "semNumero" ? T.whatsappPendente : T.aviso}
       </p>
     </form>
