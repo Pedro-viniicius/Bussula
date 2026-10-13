@@ -54,7 +54,8 @@ pnpm db:seed           # cria o evento e os vendedores
 pnpm dev
 ```
 
-A raiz `/` redireciona para o evento em `NEXT_PUBLIC_EVENTO_PADRAO`.
+A raiz `/` redireciona para a landing page em `/lp`. Os cartões NFC e QR codes
+apontam direto para `/f/<slug>`.
 
 ### Configurando um novo evento
 

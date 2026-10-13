@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
-// The bare domain is what people type by hand; send them to the current event.
+// The bare domain is what people type by hand; show them the landing page.
+// NFC cards and QR codes point straight to /f/<slug> and never pass through here.
 export default function Home() {
-  redirect(`/f/${process.env.NEXT_PUBLIC_EVENTO_PADRAO ?? "fiat19"}`);
+  redirect("/lp");
 }
