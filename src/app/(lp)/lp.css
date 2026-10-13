@@ -1,0 +1,113 @@
+/*
+ * Tokens da landing page. Duas direções visuais, mesmo HTML.
+ *
+ * .lp-a  "Papel e tinta": fundo claro e quente, tinta escura, um verde profundo.
+ * .lp-b  "Painel noturno": fundo grafite, serifa nos títulos, um âmbar.
+ *
+ * A cor de destaque aparece só em botões e em dados-chave.
+ */
+
+.lp {
+  --lp-bg: #ffffff;
+  --lp-bg-2: #f4f4f2;
+  --lp-surface: #ffffff;
+  --lp-ink: #111318;
+  --lp-ink-2: #3d434d;
+  --lp-muted: #6b7280;
+  --lp-line: #e3e4e1;
+  --lp-accent: #0a6b5c;
+  --lp-accent-ink: #ffffff;
+  --lp-accent-soft: #e6f2ef;
+  --lp-radius: 14px;
+  --lp-display: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --lp-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--lp-bg);
+  color: var(--lp-ink);
+  font-family: var(--lp-body);
+  scroll-behavior: smooth;
+}
+
+.lp-a {
+  --lp-bg: #f8f6f1;
+  --lp-bg-2: #efece4;
+  --lp-surface: #ffffff;
+  --lp-ink: #16181d;
+  --lp-ink-2: #3b3f47;
+  --lp-muted: #6f7480;
+  --lp-line: #e2ded4;
+  --lp-accent: #0a6b5c;
+  --lp-accent-ink: #ffffff;
+  --lp-accent-soft: #e4efeb;
+  --lp-radius: 16px;
+}
+
+.lp-b {
+  --lp-bg: #0f1216;
+  --lp-bg-2: #151a20;
+  --lp-surface: #1a2027;
+  --lp-ink: #f3f2ee;
+  --lp-ink-2: #c9ccd1;
+  --lp-muted: #8b919b;
+  --lp-line: rgba(255, 255, 255, 0.1);
+  --lp-accent: #f0b23f;
+  --lp-accent-ink: #15120a;
+  --lp-accent-soft: rgba(240, 178, 63, 0.12);
+  --lp-radius: 8px;
+  --lp-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+  color-scheme: dark;
+}
+
+.lp h1,
+.lp h2,
+.lp .lp-display {
+  font-family: var(--lp-display);
+  letter-spacing: -0.02em;
+}
+
+.lp-b h1,
+.lp-b h2,
+.lp-b .lp-display {
+  letter-spacing: -0.005em;
+  font-weight: 500;
+}
+
+.lp :focus-visible {
+  outline: 2px solid var(--lp-accent);
+  outline-offset: 3px;
+}
+
+.lp .lp-pulse {
+  animation: lp-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes lp-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.lp .lp-wave {
+  animation: lp-wave 2.4s ease-out infinite;
+  transform-origin: center;
+}
+.lp .lp-wave:nth-child(2) { animation-delay: 0.4s; }
+.lp .lp-wave:nth-child(3) { animation-delay: 0.8s; }
+
+@keyframes lp-wave {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp .lp-pulse,
+  .lp .lp-wave {
+    animation: none;
+    opacity: 1;
+  }
+  .lp { scroll-behavior: auto; }
+}
+
+/* Sem a bolinha nativa, o <details> do FAQ fica limpo. */
+.lp details > summary { list-style: none; }
+.lp details > summary::-webkit-details-marker { display: none; }
+.lp details[open] .lp-chevron { transform: rotate(180deg); }
