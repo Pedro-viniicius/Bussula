@@ -147,3 +147,24 @@
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * Identidade Bússola (landing page). Bloco aditivo: só cria utilitários novos
+ * (bg-brand, text-ink-muted…), não muda nenhum token usado pelo formulário ou
+ * pelo painel. `@theme` (sem inline) também publica as variáveis em :root.
+ *
+ * Regras: brand é o único acento (botões, links, números-chave). brand-dark
+ * para hover e para seções escuras. brand-light só como fundo suave, preenchimento
+ * de gráfico ou texto SOBRE brand-dark — nunca como texto em fundo claro (1,9:1).
+ */
+@theme {
+  --color-brand-light: #93befb;
+  --color-brand: #1148c7;
+  --color-brand-dark: #002e8f;
+  --color-brand-tint: #e7f1fe; /* brand-light a 22% sobre branco, para fundos suaves */
+  --color-canvas: #ffffff;
+  --color-canvas-alt: #f5f7fb;
+  --color-ink: #0b1220;
+  --color-ink-muted: #5b6475;
+  --color-hairline: #e3e7ef;
+}

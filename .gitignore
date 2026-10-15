@@ -40,3 +40,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# material de negócio e segredos locais (nunca versionar)
+/negocio/
+/senhas.txt
+/.claude/agent-memory/

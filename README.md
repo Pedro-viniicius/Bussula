@@ -1,4 +1,21 @@
-# Essencial Fit — coleta e análise da experiência dos clientes
+# BUSSULA
+
+**BUSSULA é uma plataforma que conecta o ambiente físico ao digital por meio de
+NFC e QR Code.** Ela captura os dados das interações e usa inteligência
+artificial para transformá-los em informações, recomendações e apoio à tomada de
+decisões.
+
+> **BUSSULA = NFC/QR + captura de dados + gestão + IA para tomada de decisões**
+>
+> interação física → dado → análise → decisão
+
+Cada cliente é uma instalação própria deste código (projeto na Vercel, banco e
+variáveis). A identidade do cliente fica em `src/lib/marca.ts`. A landing de
+vendas da plataforma fica em `/lp` (o endereço antigo `/lp/b` redireciona para lá).
+
+O primeiro cliente é a Essencial Fit, descrita abaixo.
+
+## Essencial Fit — coleta e análise da experiência dos clientes
 
 Sistema operacional da Essencial Fit. Faz um fluxo só, do começo ao fim:
 
@@ -23,7 +40,7 @@ O painel da loja tem três áreas, e só três:
 
 A loja não cria nem edita formulários pelo painel.
 
-Não é um site institucional e não tem página de vendas.
+A raiz `/` da instalação é a página de acesso da loja, não uma página de vendas.
 
 ## Rodar
 
@@ -44,6 +61,7 @@ os serviços de verdade.
 | Endereço | O que é |
 | --- | --- |
 | `/` | Página de acesso |
+| `/lp` | Landing de vendas da plataforma Bússola |
 | `/admin/login` | Entrada do painel (senha + código do autenticador) |
 | `/admin` | Visão Geral: números da coleta, sinais e ritmo dos dias |
 | `/admin/formularios` | Formulários disponíveis: situação, respostas, link público |
