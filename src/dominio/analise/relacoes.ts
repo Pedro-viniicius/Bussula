@@ -16,7 +16,13 @@
  * E mesmo assim ela vira hipótese, nunca conclusão: duas respostas andarem
  * juntas não diz que uma causa a outra.
  */
-import { familiaDoTipo, limitesDaNota, type Pergunta, type ValorDaResposta } from "@/dominio/formularios/perguntas";
+import {
+  familiaDoTipo,
+  limitesDaNota,
+  semDadosPessoais,
+  type Pergunta,
+  type ValorDaResposta,
+} from "@/dominio/formularios/perguntas";
 import type { Resposta } from "@/dominio/respostas/tipos";
 import { formatarComUmaCasa } from "@/utilitarios/numeros";
 import { leituraVazia, type Leitura } from "./leitura";
@@ -62,7 +68,8 @@ export function lerRelacoes(perguntas: Pergunta[], respostas: Resposta[]): Leitu
 }
 
 /** Todas as combinações de nota × grupo que passam nas três travas, da maior diferença para a menor. */
-export function encontrarRelacoes(perguntas: Pergunta[], respostas: Resposta[]): RelacaoEncontrada[] {
+export function encontrarRelacoes(todasAsPerguntas: Pergunta[], respostas: Resposta[]): RelacaoEncontrada[] {
+  const perguntas = semDadosPessoais(todasAsPerguntas);
   const perguntasDeNota = perguntas.filter((pergunta) => familiaDoTipo(pergunta.tipo) === "nota");
   const perguntasQueFormamGrupos = perguntas.filter(
     (pergunta) => pergunta.tipo === "escolha_unica" || pergunta.tipo === "sim_nao",

@@ -1,5 +1,5 @@
 /**
- * O painel da loja tem três áreas e nenhuma forma de criar ou editar
+ * O painel da loja tem quatro áreas e nenhuma forma de criar ou editar
  * formulário. Estes testes existem para que essa decisão de produto não
  * volte atrás por acidente — um link esquecido, um botão copiado de outra
  * tela, um endereço antigo que parou de funcionar.
@@ -33,12 +33,13 @@ function todosOsTextos(valor: unknown): string[] {
 }
 
 describe("navegação do painel", () => {
-  it("tem exatamente Visão Geral, Formulários e Resultados & IA, nesta ordem", () => {
+  it("tem exatamente Visão Geral, Formulários, Contatos e Resultados & IA, nesta ordem", () => {
     assert.deepEqual(
       AREAS_DO_PAINEL.map((area) => [area.rotulo, area.href]),
       [
         ["Visão Geral", "/admin"],
         ["Formulários", "/admin/formularios"],
+        ["Contatos", "/admin/contatos"],
         ["Resultados & IA", "/admin/resultados"],
       ],
     );

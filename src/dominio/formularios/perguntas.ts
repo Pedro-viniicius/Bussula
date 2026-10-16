@@ -15,6 +15,8 @@ export const TIPOS_DE_PERGUNTA = [
   "sim_nao",
   "texto_curto",
   "texto_livre",
+  "whatsapp",
+  "nome",
 ] as const;
 
 export type TipoDePergunta = (typeof TIPOS_DE_PERGUNTA)[number];
@@ -37,6 +39,11 @@ export type DescricaoDoTipo = {
   /** Se o tipo precisa de um intervalo numérico configurável. */
   usaEscala: boolean;
   familia: FamiliaDoTipo;
+  /**
+   * Se a resposta é dado pessoal. Dado pessoal nunca fica em `respostas.valores`:
+   * o servidor o separa e o guarda em `contatos`, fora da análise e da IA.
+   */
+  pessoal: boolean;
 };
 
 export const DESCRICAO_DO_TIPO: Record<TipoDePergunta, DescricaoDoTipo> = {
@@ -46,6 +53,7 @@ export const DESCRICAO_DO_TIPO: Record<TipoDePergunta, DescricaoDoTipo> = {
     usaOpcoes: true,
     usaEscala: false,
     familia: "escolha",
+    pessoal: false,
   },
   multipla_escolha: {
     rotulo: "Múltipla escolha",
@@ -53,6 +61,7 @@ export const DESCRICAO_DO_TIPO: Record<TipoDePergunta, DescricaoDoTipo> = {
     usaOpcoes: true,
     usaEscala: false,
     familia: "escolha",
+    pessoal: false,
   },
   escala: {
     rotulo: "Escala",
@@ -60,6 +69,7 @@ export const DESCRICAO_DO_TIPO: Record<TipoDePergunta, DescricaoDoTipo> = {
     usaOpcoes: false,
     usaEscala: true,
     familia: "nota",
+    pessoal: false,
   },
   avaliacao: {
     rotulo: "Avaliação",
@@ -67,6 +77,7 @@ export const DESCRICAO_DO_TIPO: Record<TipoDePergunta, DescricaoDoTipo> = {
     usaOpcoes: false,
     usaEscala: false,
     familia: "nota",
+    pessoal: false,
   },
   sim_nao: {
     rotulo: "Sim ou não",
@@ -74,6 +85,7 @@ export const DESCRICAO_DO_TIPO: Record<TipoDePergunta, DescricaoDoTipo> = {
     usaOpcoes: false,
     usaEscala: false,
     familia: "escolha",
+    pessoal: false,
   },
   texto_curto: {
     rotulo: "Texto curto",
@@ -81,6 +93,7 @@ export const DESCRICAO_DO_TIPO: Record<TipoDePergunta, DescricaoDoTipo> = {
     usaOpcoes: false,
     usaEscala: false,
     familia: "texto",
+    pessoal: false,
   },
   texto_livre: {
     rotulo: "Texto livre",
@@ -88,6 +101,23 @@ export const DESCRICAO_DO_TIPO: Record<TipoDePergunta, DescricaoDoTipo> = {
     usaOpcoes: false,
     usaEscala: false,
     familia: "texto",
+    pessoal: false,
+  },
+  whatsapp: {
+    rotulo: "WhatsApp",
+    quandoUsar: "O número de celular de quem responde. Só com uma finalidade clara para ele.",
+    usaOpcoes: false,
+    usaEscala: false,
+    familia: "texto",
+    pessoal: true,
+  },
+  nome: {
+    rotulo: "Nome",
+    quandoUsar: "Como a pessoa quer ser chamada. É guardado só junto do WhatsApp.",
+    usaOpcoes: false,
+    usaEscala: false,
+    familia: "texto",
+    pessoal: true,
   },
 };
 
@@ -158,6 +188,25 @@ export function trocarTipo(pergunta: Pergunta, tipo: TipoDePergunta): Pergunta {
     opcoes: descricao.usaOpcoes ? (pergunta.opcoes.length ? pergunta.opcoes : ["", ""]) : [],
     escala: descricao.usaEscala ? (pergunta.escala ?? { ...ESCALA_PADRAO }) : null,
   };
+}
+
+/** Verdadeiro para os tipos cuja resposta é dado pessoal (WhatsApp, nome). */
+export function ehPerguntaPessoal(pergunta: Pergunta): boolean {
+  return DESCRICAO_DO_TIPO[pergunta.tipo].pessoal;
+}
+
+/**
+ * As perguntas sem as de dado pessoal. É o que resultados, análise e respostas
+ * individuais percorrem: dado pessoal não entra em conta, gráfico nem pedido a
+ * modelo de linguagem.
+ */
+export function semDadosPessoais(perguntas: Pergunta[]): Pergunta[] {
+  return perguntas.filter((pergunta) => !ehPerguntaPessoal(pergunta));
+}
+
+/** Verdadeiro quando alguma pergunta pede dado pessoal. */
+export function pedeDadosPessoais(perguntas: Pergunta[]): boolean {
+  return perguntas.some(ehPerguntaPessoal);
 }
 
 /** Se a resposta de um tipo se soma, se conta ou se lê. */

@@ -13,6 +13,22 @@ cd "$(dirname "$0")/.."
 PATH="$(pwd)/node_modules/.bin:$PATH"
 export PATH
 
+# Produção nunca sobe com o modo de teste: falha antes de qualquer migração.
+if [ "${VERCEL_ENV:-}" = "production" ]; then
+  case "${USAR_MOCKS:-}" in
+    ""|false|0|off) ;;
+    *)
+      echo "ERRO: USAR_MOCKS=${USAR_MOCKS} em produção (VERCEL_ENV=production). Remova a variável." >&2
+      exit 1
+      ;;
+  esac
+  # Sem o sal o ip_hash não é gravado e o limite de envios por IP fica desligado.
+  if [ -z "${IP_HASH_SALT:-}" ]; then
+    echo "ERRO: IP_HASH_SALT vazio em produção (VERCEL_ENV=production). Defina a variável." >&2
+    exit 1
+  fi
+fi
+
 case "${USAR_MOCKS:-}" in
   true|1|on)
     echo "USAR_MOCKS=${USAR_MOCKS}: modo de teste, pulando a migração do banco."

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Quando } from "@/components/interface/tempo";
-import type { Pergunta } from "@/dominio/formularios/perguntas";
+import { semDadosPessoais, type Pergunta } from "@/dominio/formularios/perguntas";
 import { ROTULO_DA_ORIGEM, type Resposta } from "@/dominio/respostas/tipos";
 import { A } from "@/lib/texts/admin";
 import { formatarValor } from "@/utilitarios/valores";
@@ -26,7 +26,8 @@ export function RespostaRecebida({
   nomeDoFormulario?: string;
   href?: string;
 }) {
-  const respondidas = perguntas
+  // Dado pessoal não aparece em resposta individual, nem se estiver em `valores`.
+  const respondidas = semDadosPessoais(perguntas)
     .map((pergunta) => ({ pergunta, texto: formatarValor(pergunta, resposta.valores[pergunta.id] ?? null) }))
     .filter((item) => item.texto !== null);
 

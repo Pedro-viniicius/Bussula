@@ -29,6 +29,20 @@
       "when": 1790081789277,
       "tag": "0003_formularios_respostas",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792104962612,
+      "tag": "0004_remove_legado",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792105446284,
+      "tag": "0005_contatos",
+      "breakpoints": true
     }
   ]
 }

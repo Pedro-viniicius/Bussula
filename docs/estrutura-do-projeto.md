@@ -44,11 +44,16 @@ existem, o que significa "ativo", como um erro se chama.
 Cada definição existe aqui **uma vez só**, e o resto do sistema lê daqui. É por
 isso que "Ativo" é escrito igual no painel inteiro.
 
-Duas subpastas merecem nota:
+Algumas subpastas merecem nota:
 
 - `resultados/` — como as respostas de um formulário viram números: total,
   ritmo dos dias, canais, distribuição de cada pergunta. É conta pura, testável
   sem banco.
+- `contatos/` — o que é um contato (quem deixou o WhatsApp): como o cupom e o
+  código de indicação são gerados, como nome e telefone são escondidos na
+  lista e o contrato do repositório de contatos.
+- `privacidade/` — quando os dados da empresa responsável estão completos. Sem
+  isso, em produção, formulário que pede dado pessoal não abre.
 - `analise/` — o que esses números podem significar. Define o contrato do
   analista, as regras fixas que escrevem fatos, interpretações, hipóteses e
   ações, e a trava que descarta qualquer frase sem base nos dados.
@@ -61,6 +66,11 @@ que chame serviço externo.
 **É onde o produto decide.** Como nasce o endereço público de um formulário,
 quando uma edição vira uma versão nova, o que conta como resposta válida, quais
 números a visão geral mostra.
+
+Dois arquivos merecem nota: `contatos.ts` é a **única porta** pela qual o
+painel lê dado pessoal (entrega a lista escondida, e só revela ou exporta com
+registro na auditoria), e `publicacao-de-formularios.ts` publica os formulários
+descritos em arquivo (usado pelo script `formularios:publicar`).
 
 *Não coloque aqui:* SQL, nem componente de tela.
 
@@ -97,9 +107,12 @@ As peças de tela, separadas por assunto:
 
 - `interface/` — peças que qualquer tela usa: cartão, etiqueta, número, aviso,
   estado vazio, situação, data.
-- `navegacao/` — a barra do painel e a lista das três áreas.
+- `navegacao/` — a barra do painel e a lista das quatro áreas.
 - `formularios/` — a tela que o cliente vê, o link público e os botões de
   pausar, retomar e arquivar.
+- `contatos/` — a aba Contatos: lista, filtros, revelar e exportar.
+- `conclusao/` — a tela que o cliente vê depois de enviar (cupom e link de
+  indicação).
 - `dashboard/` — gráfico de respostas por dia, sinais, resposta recebida.
 - `resultados/` — a tela de Resultados & IA: escolha do formulário, dados,
   análise, possíveis ações e respostas uma a uma.
@@ -116,13 +129,17 @@ podem ser traduzidos.
 - `app/page.tsx` — a página de acesso (`/`)
 - `app/(painel)/admin/…` — tudo que exige login
 - `app/f/[slug]/` — o formulário que o cliente abre
-- `app/resposta/concluida/` — a confirmação
+- `app/resposta/concluida/` — a confirmação (com o cupom, quando há)
+- `app/privacidade/` — a política de privacidade
+- `app/(painel)/admin/contatos/` — a aba Contatos (inclui a exportação em CSV)
 - `app/api/f/[slug]/respostas/` — por onde a resposta entra
 
 ### `src/lib/`
 
 Peças de infraestrutura que não são do produto: conexão com o banco, sessão do
-administrador, registro de log, fila offline, textos das telas.
+administrador, registro de log, fila offline, textos das telas. `marca.ts` guarda a
+identidade da loja e os dados da empresa responsável pelos dados pessoais
+(`CONTROLADOR`); `security/` guarda o hash do IP e o limite de envios.
 
 ### `src/utilitarios/`
 
@@ -142,11 +159,21 @@ aplicada. **Nunca edite um arquivo já aplicado** — crie outro com
 
 ### `scripts/`
 
-Comandos de manutenção rodados à mão no terminal.
+Comandos de manutenção rodados à mão no terminal: publicar formulários a
+partir de um arquivo (`publicar-formularios.ts`), conferir em qual banco se
+está (`db-whoami.ts`) e configurar o autenticador do painel. A versão `:prod`
+dos comandos age no banco de produção.
+
+### `config/`
+
+Os arquivos que descrevem os formulários de cada cliente
+(`config/formularios/<cliente>.json`). É daqui que o script de publicação lê.
+`exemplo.json` é só um modelo fictício.
 
 ### `docs/`
 
-Este documento e o de acesso administrativo.
+Este documento, o de acesso administrativo e, em `docs/produto/`, os briefs,
+planos e decisões de produto.
 
 ## Duas regras que valem sempre
 

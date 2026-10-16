@@ -5,6 +5,7 @@
  * ficam em `src/servicos/formularios.ts` e não enxergam nada daqui.
  */
 import { desc, eq, and } from "drizzle-orm";
+import { lerModulos } from "@/dominio/formularios/modulos";
 import type { Pergunta } from "@/dominio/formularios/perguntas";
 import type { RepositorioDeFormularios } from "@/dominio/formularios/repositorio";
 import type { SituacaoDoFormulario } from "@/dominio/formularios/status";
@@ -30,6 +31,12 @@ function paraDominio(linha: FormularioGravado): Formulario {
     versaoAtual: linha.versaoAtual,
     criadoEm: linha.criadoEm,
     atualizadoEm: linha.atualizadoEm,
+    configuracaoDaLoja: {
+      textoDoBrinde: linha.textoDoBrinde,
+      nomeObrigatorio: linha.nomeObrigatorio,
+      whatsappObrigatorio: linha.whatsappObrigatorio,
+      formularioDeIndicacaoId: linha.formularioDeIndicacaoId,
+    },
   };
 }
 
@@ -43,8 +50,15 @@ export const repositorioDeFormulariosNoBanco: RepositorioDeFormularios = {
     if (!FORMATO_DE_UUID.test(id)) return null;
     const [linha] = await db.select().from(formularios).where(eq(formularios.id, id)).limit(1);
     if (!linha) return null;
-    const perguntas = await this.perguntasDaVersao(linha.id, linha.versaoAtual);
-    const comPerguntas: FormularioComPerguntas = { ...paraDominio(linha), perguntas: perguntas ?? [] };
+    const [perguntas, modulos] = await Promise.all([
+      this.perguntasDaVersao(linha.id, linha.versaoAtual),
+      this.modulosDaVersao(linha.id, linha.versaoAtual),
+    ]);
+    const comPerguntas: FormularioComPerguntas = {
+      ...paraDominio(linha),
+      perguntas: perguntas ?? [],
+      modulos: modulos ?? lerModulos(null),
+    };
     return comPerguntas;
   },
 
@@ -60,6 +74,16 @@ export const repositorioDeFormulariosNoBanco: RepositorioDeFormularios = {
       .where(and(eq(versoesFormulario.formularioId, formularioId), eq(versoesFormulario.versao, versao)))
       .limit(1);
     return linha ? (linha.perguntas as Pergunta[]) : null;
+  },
+
+  async modulosDaVersao(formularioId, versao) {
+    const [linha] = await db
+      .select({ modulos: versoesFormulario.modulos })
+      .from(versoesFormulario)
+      .where(and(eq(versoesFormulario.formularioId, formularioId), eq(versoesFormulario.versao, versao)))
+      .limit(1);
+    // O jsonb nunca é confiado: valor ausente ou estranho vale como tudo desligado.
+    return linha ? lerModulos(linha.modulos) : null;
   },
 
   async slugEstaLivre(slug) {
@@ -79,7 +103,12 @@ export const repositorioDeFormulariosNoBanco: RepositorioDeFormularios = {
         .returning();
       await tx
         .insert(versoesFormulario)
-        .values({ formularioId: linha.id, versao: 1, perguntas: entrada.perguntas });
+        .values({
+          formularioId: linha.id,
+          versao: 1,
+          perguntas: entrada.perguntas,
+          modulos: entrada.modulos ?? lerModulos(null),
+        });
       return paraDominio(linha);
     });
   },
@@ -89,10 +118,21 @@ export const repositorioDeFormulariosNoBanco: RepositorioDeFormularios = {
       const [atual] = await tx.select().from(formularios).where(eq(formularios.id, id)).limit(1);
       if (!atual) return null;
 
+      // Sem módulos nos dados, a versão nova herda os da que estava no ar.
+      let modulos = dados.modulos;
+      if (!modulos) {
+        const [anterior] = await tx
+          .select({ modulos: versoesFormulario.modulos })
+          .from(versoesFormulario)
+          .where(and(eq(versoesFormulario.formularioId, id), eq(versoesFormulario.versao, atual.versaoAtual)))
+          .limit(1);
+        modulos = lerModulos(anterior?.modulos);
+      }
+
       const proximaVersao = atual.versaoAtual + 1;
       await tx
         .insert(versoesFormulario)
-        .values({ formularioId: id, versao: proximaVersao, perguntas: dados.perguntas });
+        .values({ formularioId: id, versao: proximaVersao, perguntas: dados.perguntas, modulos });
 
       const [atualizado] = await tx
         .update(formularios)
@@ -106,6 +146,21 @@ export const repositorioDeFormulariosNoBanco: RepositorioDeFormularios = {
         .returning();
       return paraDominio(atualizado);
     });
+  },
+
+  async salvarConfiguracaoDaLoja(id, configuracao) {
+    if (!FORMATO_DE_UUID.test(id)) return null;
+    const [linha] = await db
+      .update(formularios)
+      .set({
+        textoDoBrinde: configuracao.textoDoBrinde,
+        nomeObrigatorio: configuracao.nomeObrigatorio,
+        whatsappObrigatorio: configuracao.whatsappObrigatorio,
+        formularioDeIndicacaoId: configuracao.formularioDeIndicacaoId,
+      })
+      .where(eq(formularios.id, id))
+      .returning();
+    return linha ? paraDominio(linha) : null;
   },
 
   async mudarSituacao(id, situacao) {

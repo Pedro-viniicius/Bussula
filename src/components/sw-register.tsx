@@ -10,7 +10,7 @@ import { sincronizar } from "@/lib/offline/sync";
  *
  * Production only: dev chunks are not content-hashed and must not be cached.
  */
-export function SwRegister({ slug }: { slug: string }) {
+export function SwRegister({ slug }: { slug?: string }) {
   useEffect(() => {
     void sincronizar();
     const aoVoltar = () => void sincronizar();
@@ -21,7 +21,9 @@ export function SwRegister({ slug }: { slug: string }) {
       navigator.serviceWorker.ready.then((reg) => {
         reg.active?.postMessage({
           tipo: "aquecer",
-          urls: [`/f/${encodeURIComponent(slug)}`, `/f/${encodeURIComponent(slug)}/sucesso`],
+          // O formulário (se for o caso), a confirmação e a política, para
+          // abrirem sem sinal. O endereço do formulário vai sem `?o=`/`?ref=`.
+          urls: [...(slug ? [`/f/${encodeURIComponent(slug)}`] : []), "/resposta/concluida", "/privacidade"],
         });
       });
     };

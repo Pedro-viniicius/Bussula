@@ -2,14 +2,22 @@
  * Service worker for the capture flow. Hand-written, no build step.
  *
  * - /_next/static/*      cache-first (content-hashed, immutable)
- * - /f/* navigations     network-first with a timeout, keyed by pathname so
- *                        /f/fiat19?o=nfc&v=07 and ?v=03 share one cached page
- * - "aquecer" message    caches the success page and the assets it references
- * - Background Sync      replays the IndexedDB lead queue after the tab closed
+ * - /f/*, /privacidade and /resposta/concluida navigations
+ *                        network-first with a timeout, keyed by pathname so
+ *                        /f/cadastro-no-balcao?o=nfc and ?o=qr share one cached
+ *                        page (origin and ref are read in the browser, never here)
+ * - "aquecer" message    caches those pages and the assets they reference
+ * - Background Sync      replays the IndexedDB answer queue after the tab closed
+ *                        and tells the open tabs (postMessage "fila:enviada")
+ *
+ * The cached page keeps the CSP header and the HTML (with the matching nonce)
+ * of the response it came from, so it still runs when served offline.
  *
  * Everything else goes straight to the network.
  */
-const VERSAO = "v1";
+// v3: /resposta/concluida passou a ser renderizada por requisição (com nonce da
+// CSP). A cópia estática guardada na v2 não tem nonce e abriria em branco.
+const VERSAO = "v3";
 const CACHE_PAGINAS = `paginas-${VERSAO}`;
 const CACHE_ESTATICO = `estatico-${VERSAO}`;
 const TIMEOUT_REDE_MS = 8000;
@@ -47,7 +55,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(cacheFirst(request));
     return;
   }
-  if (request.mode === "navigate" && url.pathname.startsWith("/f/")) {
+  if (request.mode === "navigate" && paginaGuardada(url.pathname)) {
     event.respondWith(paginaNetworkFirst(url.pathname, request));
   }
 });
@@ -62,6 +70,10 @@ self.addEventListener("message", (event) => {
 self.addEventListener("sync", (event) => {
   if (event.tag === TAG_SYNC) event.waitUntil(reenviarFila());
 });
+
+function paginaGuardada(pathname) {
+  return pathname.startsWith("/f/") || pathname === "/privacidade" || pathname === "/resposta/concluida";
+}
 
 async function cacheFirst(request) {
   const cache = await caches.open(CACHE_ESTATICO);
@@ -141,6 +153,17 @@ function pedido(req) {
   });
 }
 
+/** Conta às abas abertas que o item foi resolvido (a tela de conclusão troca "Gerando seu cupom…"). */
+async function avisarPaginas(chave, resultado) {
+  if (!resultado) return;
+  try {
+    const abas = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const aba of abas) aba.postMessage({ tipo: "fila:enviada", chave, resultado });
+  } catch {
+    /* sem aba aberta ou sem permissão: o item já saiu da fila, não pode voltar */
+  }
+}
+
 async function reenviarFila() {
   const db = await abrirBanco();
   try {
@@ -157,10 +180,24 @@ async function reenviarFila() {
           headers: { "content-type": "application/json", "x-fila-offline": "1" },
           body: JSON.stringify(item.envio),
         });
-        // Só falha de servidor volta para a fila. Qualquer resposta com
-        // sentido — gravada, repetida, formulário fora do ar — encerra o item.
-        if (res.status >= 500) throw new Error("servidor");
+        // Limite de envios (429): o limite é do IP, não do item. O item fica e
+        // o laço para; o navegador reagenda a sincronização (rejeição abaixo).
+        if (res.status === 429) {
+          pendente = true;
+          break;
+        }
+        // Falha de servidor também volta para a fila: o cadastro ainda não
+        // chegou ao servidor e a pessoa já foi embora. Qualquer outra resposta
+        // com sentido — gravada, repetida, formulário fora do ar — encerra o item.
+        if (res.status >= 500) throw new Error("pendente");
+        let resultado = null;
+        try {
+          resultado = await res.json();
+        } catch {
+          /* corpo que não é JSON: o item sai da fila, mas não há o que contar à página */
+        }
         await pedido(db.transaction(STORE, "readwrite").objectStore(STORE).delete(item.chave));
+        await avisarPaginas(item.chave, resultado);
       } catch {
         pendente = true;
         await pedido(

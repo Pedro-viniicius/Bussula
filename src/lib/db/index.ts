@@ -6,7 +6,7 @@ import { createPool } from "./pool";
 import * as schema from "./schema";
 
 // The app talks to Neon's pooled endpoint (PgBouncer, transaction mode):
-// one connection per function instance, no session-level prepared statements.
+// up to 3 connections per function instance (Fluid Compute serves concurrent requests), no session-level prepared statements.
 // Scripts and migrations use DATABASE_URL_UNPOOLED (see drizzle.config.ts).
 
 const globalForDb = globalThis as unknown as { pgPool?: Pool; drizzleDb?: Conexao };
@@ -42,11 +42,11 @@ function conectar(): Conexao {
     log.info("banco de dados", { host: hostDoBanco(connectionString) });
   }
 
+  // Um único Pool por processo, também em produção: o Proxy `db` chama esta
+  // função a cada acesso, e sem o cache cada consulta abriria um Pool novo.
   const conexao = abrir(pool);
-  if (process.env.NODE_ENV !== "production") {
-    globalForDb.pgPool = pool;
-    globalForDb.drizzleDb = conexao;
-  }
+  globalForDb.pgPool = pool;
+  globalForDb.drizzleDb = conexao;
   return conexao;
 }
 

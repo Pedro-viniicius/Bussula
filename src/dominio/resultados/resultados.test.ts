@@ -230,3 +230,24 @@ describe("números por extenso", () => {
     assert.equal(formatarProporcao(0, 0), "0% (0 de 0)");
   });
 });
+
+describe("dado pessoal nos resultados", () => {
+  it("não aparece nas distribuições, nem se estiver (por engano) em valores", () => {
+    const perguntas = [
+      pergunta({ id: "whats", tipo: "whatsapp" }),
+      pergunta({ id: "nome", tipo: "nome" }),
+      pergunta({ id: "nota", tipo: "avaliacao" }),
+    ];
+    const respostas = respostasComValores(
+      [{ whats: "+5535999998888", nome: "Ana", nota: 5 }],
+      AGORA,
+    );
+    const distribuicoes = calcularDistribuicoes(perguntas, respostas);
+    assert.deepEqual(
+      distribuicoes.map((d) => d.perguntaId),
+      ["nota"],
+    );
+    assert.equal(JSON.stringify(distribuicoes).includes("5535999998888"), false);
+    assert.equal(JSON.stringify(distribuicoes).includes("Ana"), false);
+  });
+});

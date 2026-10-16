@@ -57,6 +57,10 @@ export function lerPergunta(distribuicao: DistribuicaoDaPergunta): Leitura {
     case "texto_curto":
     case "texto_livre":
       return lerComentarios(distribuicao);
+    case "whatsapp":
+    case "nome":
+      // Dado pessoal não é lido nem resumido, em hipótese nenhuma.
+      return leituraVazia();
   }
 }
 

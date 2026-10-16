@@ -5,6 +5,7 @@ import { Situacao } from "@/components/interface/situacao";
 import { RespostaRecebida } from "@/components/dashboard/resposta-recebida";
 import { SerieDeRespostas } from "@/components/dashboard/serie-de-respostas";
 import { Sinais } from "@/components/dashboard/sinais";
+import { AvisoDeTravado } from "@/components/formularios/aviso-de-travado";
 import { TopoAdmin } from "@/components/navegacao/topo-admin";
 import { DIAS_PERIODO_PADRAO, RESPOSTAS_RECENTES_NA_VISAO_GERAL } from "@/dominio/constantes";
 import type { FormularioNaLista } from "@/dominio/formularios/tipos";
@@ -12,7 +13,7 @@ import { calcularVariacao } from "@/dominio/resultados/variacao";
 import { exigirAdmin } from "@/lib/admin/session";
 import { A } from "@/lib/texts/admin";
 import { carregarResumoDoDashboard, carregarSerieDeRespostas, detectarSinais } from "@/servicos/dashboard";
-import { listarFormularios } from "@/servicos/formularios";
+import { listarFormularios, situacaoDaPrivacidade } from "@/servicos/formularios";
 import { buscarRespostasRecentes, comPerguntas } from "@/servicos/respostas";
 import { formatarInteiro } from "@/utilitarios/numeros";
 
@@ -38,11 +39,12 @@ const FORMULARIOS_NA_VISAO_GERAL = 4;
 export default async function VisaoGeralPage() {
   await exigirAdmin("/admin");
 
-  const [resumo, formularios, serie, recentes] = await Promise.all([
+  const [resumo, formularios, serie, recentes, privacidade] = await Promise.all([
     carregarResumoDoDashboard(),
     listarFormularios(),
     carregarSerieDeRespostas(),
     buscarRespostasRecentes(RESPOSTAS_RECENTES_NA_VISAO_GERAL),
+    situacaoDaPrivacidade(),
   ]);
 
   const respostasDetalhadas = await comPerguntas(recentes);
@@ -75,6 +77,7 @@ export default async function VisaoGeralPage() {
       <TopoAdmin atual="visao-geral" />
       <main id="conteudo" className="flex-1 py-6 sm:py-8">
         <Container className="space-y-8 sm:space-y-10">
+          <AvisoDeTravado situacao={privacidade} />
           <header>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{V.titulo}</h1>
             <p className="mt-1 text-muted-foreground">{V.subtitulo}</p>

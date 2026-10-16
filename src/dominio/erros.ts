@@ -13,6 +13,8 @@ export const CODIGOS_DE_ERRO = [
   "ENVIO_EXPIRADO",
   "FALHA_DE_PERSISTENCIA",
   "NAO_AUTORIZADO",
+  "LIMITE_EXCEDIDO",
+  "FORMULARIO_TRAVADO",
 ] as const;
 
 export type CodigoDeErro = (typeof CODIGOS_DE_ERRO)[number];
@@ -26,6 +28,9 @@ export const MENSAGEM_DO_ERRO: Record<CodigoDeErro, string> = {
   ENVIO_EXPIRADO: "A conexão demorou demais. Tente enviar de novo.",
   FALHA_DE_PERSISTENCIA: "Não conseguimos salvar agora. Tente de novo em instantes.",
   NAO_AUTORIZADO: "Você precisa entrar no painel para ver esta página.",
+  LIMITE_EXCEDIDO:
+    "Muitos envios em pouco tempo. Suas respostas continuam aqui: espere um pouco e envie de novo.",
+  FORMULARIO_TRAVADO: "Este formulário está indisponível no momento.",
 };
 
 /** Resultado de uma operação que pode falhar de um jeito previsto. */

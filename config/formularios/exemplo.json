@@ -1,0 +1,27 @@
+{
+  "formularios": [
+    {
+      "slug": "exemplo-cadastro",
+      "nome": "EXEMPLO — Cadastro de demonstração",
+      "descricao": "Arquivo de exemplo fictício. NÃO é o conteúdo do cliente: copie para config/formularios/<cliente>.json e troque tudo.",
+      "publicar": false,
+      "modulos": {
+        "recompra": true,
+        "ofertas": false,
+        "cupom": { "prefixo": "EXE" },
+        "indicacao": true
+      },
+      "perguntas": [
+        { "id": "nome", "tipo": "nome", "enunciado": "Como podemos te chamar?" },
+        { "id": "whatsapp", "tipo": "whatsapp", "enunciado": "Qual é o seu WhatsApp?" },
+        {
+          "id": "como-conheceu",
+          "tipo": "escolha_unica",
+          "enunciado": "Como você conheceu a loja?",
+          "obrigatoria": false,
+          "opcoes": ["Indicação de amigo", "Redes sociais", "Passei na frente"]
+        }
+      ]
+    }
+  ]
+}

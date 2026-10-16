@@ -4,11 +4,16 @@
  */
 import { randomUUID } from "node:crypto";
 import type { RepositorioDeFormularios } from "@/dominio/formularios/repositorio";
-import type { Formulario } from "@/dominio/formularios/tipos";
+import { MODULOS_DESLIGADOS, type ModulosDoFormulario } from "@/dominio/formularios/modulos";
+import { CONFIGURACAO_DA_LOJA_PADRAO, type Formulario } from "@/dominio/formularios/tipos";
 import { loja } from "./loja";
 
 function copiar(formulario: Formulario): Formulario {
-  return { ...formulario };
+  return { ...formulario, configuracaoDaLoja: { ...formulario.configuracaoDaLoja } };
+}
+
+function copiarModulos(modulos: ModulosDoFormulario): ModulosDoFormulario {
+  return { ...modulos, cupom: modulos.cupom ? { ...modulos.cupom } : null };
 }
 
 export const repositorioDeFormulariosEmMemoria: RepositorioDeFormularios = {
@@ -22,7 +27,8 @@ export const repositorioDeFormulariosEmMemoria: RepositorioDeFormularios = {
     const formulario = loja().formularios.find((f) => f.id === id);
     if (!formulario) return null;
     const perguntas = await this.perguntasDaVersao(id, formulario.versaoAtual);
-    return { ...copiar(formulario), perguntas: perguntas ?? [] };
+    const modulos = await this.modulosDaVersao(id, formulario.versaoAtual);
+    return { ...copiar(formulario), perguntas: perguntas ?? [], modulos: modulos ?? copiarModulos(MODULOS_DESLIGADOS) };
   },
 
   async buscarPorSlug(slug) {
@@ -33,6 +39,11 @@ export const repositorioDeFormulariosEmMemoria: RepositorioDeFormularios = {
   async perguntasDaVersao(formularioId, versao) {
     const encontrada = loja().versoes.find((v) => v.formularioId === formularioId && v.versao === versao);
     return encontrada ? encontrada.perguntas.map((p) => ({ ...p })) : null;
+  },
+
+  async modulosDaVersao(formularioId, versao) {
+    const encontrada = loja().versoes.find((v) => v.formularioId === formularioId && v.versao === versao);
+    return encontrada ? copiarModulos(encontrada.modulos) : null;
   },
 
   async slugEstaLivre(slug) {
@@ -50,15 +61,27 @@ export const repositorioDeFormulariosEmMemoria: RepositorioDeFormularios = {
       versaoAtual: 1,
       criadoEm: agora,
       atualizadoEm: agora,
+      configuracaoDaLoja: { ...CONFIGURACAO_DA_LOJA_PADRAO },
     };
     loja().formularios.push(formulario);
-    loja().versoes.push({ formularioId: formulario.id, versao: 1, perguntas: entrada.perguntas });
+    loja().versoes.push({
+      formularioId: formulario.id,
+      versao: 1,
+      perguntas: entrada.perguntas,
+      modulos: copiarModulos(entrada.modulos ?? MODULOS_DESLIGADOS),
+    });
     return copiar(formulario);
   },
 
   async salvarNovaVersao(id, dados) {
     const formulario = loja().formularios.find((f) => f.id === id);
     if (!formulario) return null;
+
+    // Sem módulos nos dados, a versão nova herda os da que estava no ar.
+    const modulos =
+      dados.modulos ??
+      loja().versoes.find((v) => v.formularioId === id && v.versao === formulario.versaoAtual)?.modulos ??
+      MODULOS_DESLIGADOS;
 
     formulario.versaoAtual += 1;
     formulario.nome = dados.nome;
@@ -68,7 +91,15 @@ export const repositorioDeFormulariosEmMemoria: RepositorioDeFormularios = {
       formularioId: id,
       versao: formulario.versaoAtual,
       perguntas: dados.perguntas,
+      modulos: copiarModulos(modulos),
     });
+    return copiar(formulario);
+  },
+
+  async salvarConfiguracaoDaLoja(id, configuracao) {
+    const formulario = loja().formularios.find((f) => f.id === id);
+    if (!formulario) return null;
+    formulario.configuracaoDaLoja = { ...configuracao };
     return copiar(formulario);
   },
 

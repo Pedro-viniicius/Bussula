@@ -13,11 +13,29 @@ import {
   type Pergunta,
   type ValorDaResposta,
 } from "@/dominio/formularios/perguntas";
+import { motivoTelefoneInvalido } from "@/lib/validation/phone";
+import { FORMULARIO_PUBLICO } from "@/lib/texts/publico";
 
 /** Erro por pergunta, indexado pelo id dela. Vazio significa tudo certo. */
 export type ErrosDasRespostas = Record<string, string>;
 
 const OBRIGATORIA = "Responda esta pergunta para continuar.";
+const NOME_OBRIGATORIO = "Digite seu nome para continuar.";
+const CARACTERE_INVALIDO = "Há um caractere que não podemos aceitar. Remova-o para continuar.";
+
+/**
+ * Controles (exceto tabulação e quebras de linha) e pares substitutos soltos.
+ * O Postgres recusa U+0000 em `text` e em `jsonb`, e recusa substituto solto
+ * em `jsonb`: sem esta barreira a gravação falharia com 5xx e a fila offline
+ * tentaria de novo para sempre.
+ */
+const CARACTERE_PROIBIDO = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+function temCaractereProibido(valor: ValorDaResposta): boolean {
+  if (typeof valor === "string") return CARACTERE_PROIBIDO.test(valor);
+  if (Array.isArray(valor)) return valor.some((v) => typeof v === "string" && CARACTERE_PROIBIDO.test(v));
+  return false;
+}
 
 export function validarRespostas(
   perguntas: Pergunta[],
@@ -34,8 +52,13 @@ export function validarRespostas(
 /** Nulo quando a resposta serve. */
 export function validarResposta(pergunta: Pergunta, valor: ValorDaResposta): string | null {
   if (respostaVazia(valor)) {
-    return pergunta.obrigatoria ? OBRIGATORIA : null;
+    if (!pergunta.obrigatoria) return null;
+    if (pergunta.tipo === "whatsapp") return FORMULARIO_PUBLICO.whatsapp.erros.vazio;
+    if (pergunta.tipo === "nome") return NOME_OBRIGATORIO;
+    return OBRIGATORIA;
   }
+
+  if (temCaractereProibido(valor)) return CARACTERE_INVALIDO;
 
   switch (pergunta.tipo) {
     case "escolha_unica":
@@ -67,6 +90,17 @@ export function validarResposta(pergunta: Pergunta, valor: ValorDaResposta): str
     case "texto_livre":
       if (typeof valor !== "string") return OBRIGATORIA;
       return valor.trim().length <= MAIOR_TEXTO_LIVRE ? null : `Escreva no máximo ${MAIOR_TEXTO_LIVRE} caracteres.`;
+
+    case "whatsapp": {
+      // Chega como o cliente digitou (com máscara); o servidor guarda só o E.164.
+      if (typeof valor !== "string") return FORMULARIO_PUBLICO.whatsapp.erros.vazio;
+      const motivo = motivoTelefoneInvalido(valor);
+      return motivo ? FORMULARIO_PUBLICO.whatsapp.erros[motivo] : null;
+    }
+
+    case "nome":
+      if (typeof valor !== "string") return NOME_OBRIGATORIO;
+      return valor.trim().length <= MAIOR_TEXTO_CURTO ? null : `Escreva no máximo ${MAIOR_TEXTO_CURTO} caracteres.`;
   }
 }
 

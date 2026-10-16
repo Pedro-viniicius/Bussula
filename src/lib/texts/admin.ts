@@ -8,6 +8,11 @@
 import type { Variacao } from "@/dominio/resultados/variacao";
 import { formatarPorcentagem } from "@/utilitarios/numeros";
 
+/** "Oi, Marcos!" ou, sem nome, "Oi!". */
+function saudacao(primeiroNome: string | null): string {
+  return primeiroNome ? `Oi, ${primeiroNome}!` : "Oi!";
+}
+
 export const A = {
   login: {
     marca: "Essencial Fit",
@@ -48,6 +53,7 @@ export const A = {
     areas: "Áreas do painel",
     visaoGeral: "Visão Geral",
     formularios: "Formulários",
+    contatos: "Contatos",
     resultados: "Resultados & IA",
     sair: "Sair",
     pular: "Ir para o conteúdo",
@@ -142,6 +148,104 @@ export const A = {
       descricao:
         "Os formulários são preparados e configurados pela equipe que cuida do sistema. Assim que o primeiro estiver pronto, ele aparece aqui.",
     },
+
+    /** Formulário que pede dado pessoal e depende dos dados da empresa responsável. */
+    travado: {
+      etiqueta: "Travado",
+      explicacao: "Travado: não abre para os clientes até os dados da empresa serem preenchidos.",
+      linkNaoAbre: "Este link não abre enquanto o formulário estiver travado.",
+      aviso: {
+        titulo: "Há formulários fora do ar por falta de dados da empresa",
+        texto: (faltam: string) =>
+          `Em produção, formulários que pedem consentimento só abrem depois que os dados da empresa responsável (razão social, CNPJ, endereço e e-mail de privacidade) estiverem preenchidos. Faltam: ${faltam}. Peça a quem cuida do sistema para completá-los.`,
+      },
+      /** Fora de produção o formulário abre; o painel só lembra. */
+      avisoDeExemplo:
+        "Dados da empresa ainda são de exemplo. Em produção este formulário ficaria travado.",
+      campos: {
+        razaoSocial: "razão social",
+        cnpj: "CNPJ",
+        endereco: "endereço",
+        emailPrivacidade: "e-mail de privacidade",
+      },
+    },
+
+    /** Módulos do formulário, só leitura. */
+    modulos: {
+      titulo: "Módulos deste formulário",
+      ligado: "Ligado",
+      desligado: "Desligado",
+      definidosPelaEquipe: "Os módulos são definidos pela equipe que cuida do sistema.",
+      nenhum: "Este formulário só coleta respostas.",
+      lista: {
+        recompra: {
+          rotulo: "Contato para recompra",
+          descricao: "Pede o WhatsApp e o consentimento. O gerente chama pelo painel.",
+        },
+        ofertas: {
+          rotulo: "Ofertas e novidades",
+          descricao: "Pergunta se o cliente aceita receber ofertas e novidades.",
+        },
+        cupom: {
+          rotulo: "Cupom de desconto",
+          descricao: "Gera um código único por telefone. Sem sorteio.",
+        },
+        indicacao: {
+          rotulo: "Indique um amigo",
+          descricao: "Mostra um link para compartilhar no WhatsApp. Conta indicações no painel.",
+        },
+      },
+    },
+
+    /** Configuração da loja por formulário (não cria versão). */
+    configuracao: {
+      titulo: "Configurar este formulário",
+      salvar: "Salvar configurações",
+      salvando: "Salvando…",
+      salvo: "Configurações salvas.",
+      notaSemVersao: "Estas opções não criam uma nova versão do formulário. Cada alteração fica registrada.",
+      erroGeral: "Não foi possível salvar agora. Suas alterações continuam na tela. Tente de novo.",
+      somenteLeitura: "Este formulário está fora do ar ou arquivado. As configurações aparecem só para consulta.",
+      sim: "Sim",
+      nao: "Não",
+      nome: {
+        rotulo: "Pedir o nome do cliente",
+        ajuda: "Se desligado, o cliente pode pular a pergunta de nome.",
+        semPergunta: "Este formulário não tem a pergunta de nome.",
+        precisaDoWhatsapp: "Para exigir o nome, o WhatsApp também precisa ser obrigatório.",
+      },
+      whatsapp: {
+        rotulo: "Exigir o WhatsApp",
+        ajuda: "Se desligado, o cliente pode pular o WhatsApp.",
+        semPergunta: "Este formulário não tem a pergunta de WhatsApp.",
+        travadoPeloNome: "Desligue a exigência do nome antes de tornar o WhatsApp opcional.",
+        semWhatsappSemCupom:
+          "Sem WhatsApp, sem cupom: com o cupom ligado, quem pular o WhatsApp não recebe cupom nem link de indicação e vai embora sem brinde.",
+      },
+      destino: {
+        rotulo: "Para onde vai o link 'Indique um amigo'",
+        ajuda: "É o formulário que seu amigo vai abrir pelo link.",
+        ajudaSemOutros: "Não há outros formulários ativos com WhatsApp.",
+        opcaoPadrao: "Este mesmo formulário (padrão)",
+        foraDoAr: (nome: string) => `${nome} (fora do ar)`,
+        avisoForaDoAr:
+          "O formulário de destino da indicação saiu do ar. Por enquanto o link aponta para este mesmo formulário. Escolha outro destino se quiser mudar.",
+      },
+      brinde: {
+        rotulo: "Texto do brinde",
+        ajuda: "Aparece para o cliente junto do código. Ex.: 10% de desconto na próxima compra.",
+        contador: (n: number, maximo: number) => `${n}/${maximo} caracteres`,
+        nota: "Mudar o texto vale para os próximos cupons; quem já recebeu mantém o texto antigo.",
+        vazio: "Escreva o brinde que o cliente vai receber.",
+        longo: "Use até 120 caracteres.",
+      },
+      previa: {
+        titulo: "Como o cliente vê",
+        exemplo: "Exemplo",
+        cupom: "Seu cupom",
+        codigo: "EXEMPLO-0000",
+      },
+    },
   },
 
   resultados: {
@@ -230,6 +334,133 @@ export const A = {
       descricao: "Pode ter sido uma falha passageira. Tente de novo em instantes.",
       tentar: "Tentar de novo",
       voltar: "Voltar à Visão Geral",
+    },
+  },
+
+  /** Contatos: quem se cadastrou e pode ser chamado. Dado pessoal: tudo aparece escondido até alguém revelar. */
+  contatos: {
+    titulo: "Contatos",
+    subtitulo:
+      "Clientes que se cadastraram pelos cartões e QR Codes. Os dados aparecem escondidos; revelar e exportar ficam registrados.",
+    resumo: {
+      titulo: "Resumo dos contatos",
+      contatos: "Contatos cadastrados",
+      aceitam: "Aceitam receber mensagens",
+      cupons: "Cupons emitidos",
+      indicacoes: "Indicações recebidas",
+    },
+    filtros: {
+      titulo: "Filtrar contatos",
+      formulario: "Formulário",
+      todosFormularios: "Todos os formulários",
+      origem: "Origem",
+      todasOrigens: "Todas",
+      mostrar: "Mostrar",
+      mostrarTodos: "Todos",
+      mostrarQueAceitam: "Só quem aceitou mensagens",
+      ordenar: "Ordenar",
+      maisRecentes: "Mais recentes",
+      maisIndicacoes: "Mais indicações",
+      aplicar: "Aplicar",
+      limpar: "Limpar filtros",
+    },
+    exportar: {
+      botao: (total: number) => `Exportar CSV (${total} ${total === 1 ? "contato" : "contatos"})`,
+      gerando: "Gerando arquivo…",
+      apoio:
+        "Inclui só quem aceitou receber mensagens, respeitando os filtros acima. O download fica registrado. Colunas: Nome, WhatsApp, formulário, origem, data, aceita recompra, aceita ofertas, indicações.",
+      nenhum: "Nenhum contato que aceitou mensagens nesta seleção.",
+      erro: "Não foi possível gerar o arquivo agora. Tente de novo.",
+      colunas: [
+        "Nome",
+        "WhatsApp",
+        "Formulário",
+        "Origem",
+        "Data",
+        "Aceita recompra",
+        "Aceita ofertas",
+        "Indicações",
+      ],
+      sim: "Sim",
+      nao: "Não",
+      nomeDoArquivo: (data: string) => `contatos-${data}.csv`,
+    },
+    lista: {
+      titulo: "Lista de contatos",
+      contador: (total: number) => `${total} ${total === 1 ? "contato" : "contatos"}`,
+      colunas: { contato: "Contato", formulario: "Formulário e origem", quando: "Quando", indicacoes: "Indicações", acoes: "Ações" },
+      semNome: "Sem nome",
+      formulario: "Formulário",
+      aceita: "Aceita mensagens",
+      naoAceitou: "Não aceitou mensagens",
+      indicacoes: (total: number) => (total === 1 ? "1 indicação" : `${total} indicações`),
+      nenhumaIndicacao: "Nenhuma indicação",
+      pagina: (atual: number, total: number) => `Página ${atual} de ${total}`,
+      paginacao: "Páginas de contatos",
+      anterior: "Anterior",
+      proxima: "Próxima",
+    },
+    cupom: {
+      valido: "Cupom válido",
+      vencido: "Cupom vencido",
+      sem: "Sem cupom",
+      validoAte: (data: string) => `Válido até ${data}`,
+      venceuEm: (data: string) => `Venceu em ${data}`,
+      naoGerado: "Não foi possível gerar o cupom deste contato.",
+      jaTinha: "Já recebeu o cupom antes",
+      codigo: (codigo: string) => `Cupom ${codigo}`,
+    },
+    acoes: {
+      revelar: "Revelar contato",
+      revelando: "Revelando…",
+      revelarDe: (contato: string) => `Revelar contato de ${contato}`,
+      revelado: "Contato revelado",
+      anunciarRevelado: "Contato revelado.",
+      ocultar: "Ocultar",
+      ocultarDe: (contato: string) => `Ocultar contato de ${contato}`,
+      chamar: "Chamar no WhatsApp",
+      chamarDe: (contato: string) => `Chamar ${contato} no WhatsApp`,
+      enviarCupom: "Enviar cupom no WhatsApp",
+      enviarCupomDe: (contato: string) => `Enviar cupom a ${contato} no WhatsApp`,
+      abreWhatsapp: "(abre o WhatsApp)",
+      erroAoRevelar: "Não foi possível revelar agora. Tente de novo.",
+      naoAceitou: "Não aceitou mensagens.",
+      apoioSoCupom:
+        "Este contato não aceitou mensagens de recompra ou ofertas. Envie só o cupom, uma vez, e nada além disso.",
+    },
+    vazio: {
+      titulo: "Nenhum contato cadastrado ainda",
+      descricao:
+        "Os contatos aparecem aqui quando um cliente se cadastra pelo cartão NFC ou QR Code com a pergunta de WhatsApp. Confira se o cartão tem o endereço do formulário certo, na página Formulários.",
+      verFormularios: "Ver formulários",
+    },
+    vazioComFiltro: {
+      titulo: "Nenhum contato com estes filtros",
+      descricao: "Tente outro formulário ou origem.",
+    },
+    erro: {
+      titulo: "Não foi possível carregar os contatos.",
+      descricao: "Pode ter sido uma falha passageira. Tente de novo em instantes.",
+      tentar: "Tentar de novo",
+      voltar: "Voltar à Visão Geral",
+    },
+    carregando: "Carregando contatos…",
+
+    /**
+     * Mensagem provisória de recompra, aberta no WhatsApp para o gerente
+     * revisar e enviar à mão. A loja ajusta o texto aqui.
+     */
+    mensagemWhatsApp: (primeiroNome: string | null) =>
+      `${saudacao(primeiroNome)} Aqui é da Essencial Fit. Passando para dizer que temos novidades e para ver se você precisa repor algum produto. Posso ajudar?`,
+
+    /**
+     * Entrega do cupom. Texto FIXO, sem oferta nem novidade: a loja não o edita
+     * pelo painel (pendente de confirmação jurídica, ver `ENVIO_DO_CUPOM_PELO_WHATSAPP`).
+     * `validoAte` já vem como dd/mm/aaaa.
+     */
+    mensagemCupom: (primeiroNome: string | null, codigo: string, brinde: string | null, validoAte: string) => {
+      const textoDoBrinde = brinde?.trim() ? ` ${brinde.trim().replace(/([^.!?])$/, "$1.")}` : "";
+      return `${saudacao(primeiroNome)} Aqui é da Essencial Fit. Seu cupom: ${codigo}.${textoDoBrinde} Válido até ${validoAte}. É só mostrar este código ao vendedor na hora de pagar.`;
     },
   },
 

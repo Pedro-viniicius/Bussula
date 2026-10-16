@@ -4,7 +4,7 @@ import { Marca } from "@/components/marca";
 import { FormularioPublicoInterativo } from "@/components/formularios/formulario-publico";
 import { SwRegister } from "@/components/sw-register";
 import { MARCA } from "@/lib/marca";
-import { FORMULARIO_PUBLICO as T } from "@/lib/texts/publico";
+import { FORMULARIO_PUBLICO as T, TRAVADO } from "@/lib/texts/publico";
 import { buscarFormularioPublicoPorSlug } from "@/servicos/formularios";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +12,10 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: PageProps<"/f/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const formulario = await buscarFormularioPublicoPorSlug(slug);
+  if (!formulario.ok && formulario.erro === "FORMULARIO_TRAVADO") {
+    // Responde 200 (a página já começa a ser enviada assim), mas fora dos buscadores.
+    return { title: TRAVADO.tituloDaPagina, robots: { index: false, follow: false } };
+  }
   return { title: formulario.ok ? `${formulario.valor.nome} — ${MARCA.nome}` : MARCA.nome };
 }
 
@@ -21,16 +25,23 @@ export async function generateMetadata({ params }: PageProps<"/f/[slug]">): Prom
  *
  * O formulário só abre se estiver ativo, e quem decide isso é o servidor —
  * um endereço adivinhado não revela rascunho nem formulário arquivado.
+ *
+ * Esta página não lê a query (`?o=`, `?ref=`): o service worker guarda o HTML
+ * sem ela, e a origem ou a indicação de uma visita não podem vazar para outra.
+ * Quem lê é o formulário, no navegador.
  */
-export default async function FormularioPublicoPage({ params, searchParams }: PageProps<"/f/[slug]">) {
+export default async function FormularioPublicoPage({ params }: PageProps<"/f/[slug]">) {
   const { slug } = await params;
-  const consulta = await searchParams;
-  const origem = typeof consulta.o === "string" ? consulta.o : null;
 
   const formulario = await buscarFormularioPublicoPorSlug(slug);
 
   if (!formulario.ok) {
-    const aviso = formulario.erro === "FORMULARIO_INATIVO" ? T.inativo : T.naoEncontrado;
+    const aviso =
+      formulario.erro === "FORMULARIO_TRAVADO"
+        ? TRAVADO
+        : formulario.erro === "FORMULARIO_INATIVO"
+          ? T.inativo
+          : T.naoEncontrado;
     return (
       <Tela>
         <h1 className="text-2xl font-bold tracking-tight text-balance">{aviso.titulo}</h1>
@@ -45,7 +56,7 @@ export default async function FormularioPublicoPage({ params, searchParams }: Pa
         <p className="mb-6 text-muted-foreground">{formulario.valor.descricao}</p>
       )}
       <Suspense>
-        <FormularioPublicoInterativo formulario={formulario.valor} origem={origem} />
+        <FormularioPublicoInterativo formulario={formulario.valor} />
       </Suspense>
       <SwRegister slug={slug} />
     </Tela>

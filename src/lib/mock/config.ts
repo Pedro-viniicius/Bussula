@@ -17,16 +17,40 @@ function ligado(valor: string): boolean {
   return valor !== "false" && valor !== "0" && valor !== "off";
 }
 
-const escolha = process.env.USAR_MOCKS;
+/** Variáveis de ambiente lidas para decidir o modo de teste. */
+export type AmbienteMocks = Record<string, string | undefined>;
 
 /**
- * Vale em `dev`, `build` e `start` — o padrão acima decide sozinho, sem .env.
- * A única exceção é um deploy na Vercel: lá os mocks ficam desligados mesmo com
- * PADRAO = true, para um deploy distraído nunca abrir o /admin sem senha. Para
- * qualquer outro ambiente, USAR_MOCKS=false no servidor manda mais que o padrão.
+ * Decide se o modo de teste fica ligado. Pura: recebe o ambiente e não lê
+ * `process.env` por conta própria.
+ *
+ * - `VERCEL_ENV=production`: sempre false. Se USAR_MOCKS vier ligado, registra
+ *   erro (o build também recusa, ver scripts/vercel-build.sh).
+ * - USAR_MOCKS definido: manda mais que o padrão.
+ * - Sem variável: vale PADRAO, exceto em qualquer deploy na Vercel (preview),
+ *   onde os mocks ficam desligados para um deploy distraído nunca abrir o
+ *   /admin sem senha, e com NODE_ENV=production fora da Vercel (`next start`
+ *   em servidor próprio), onde só um USAR_MOCKS explícito liga os mocks.
  */
-export const USAR_MOCKS =
-  escolha !== undefined && escolha !== "" ? ligado(escolha) : PADRAO && !process.env.VERCEL;
+export function resolverUsarMocks(env: AmbienteMocks): boolean {
+  const escolha = env.USAR_MOCKS;
+  const definida = escolha !== undefined && escolha !== "";
+
+  if (env.VERCEL_ENV === "production") {
+    if (definida && ligado(escolha)) {
+      console.error(
+        "USAR_MOCKS está ligado em produção (VERCEL_ENV=production): ignorado, os mocks ficam desligados.",
+      );
+    }
+    return false;
+  }
+
+  if (definida) return ligado(escolha);
+  return PADRAO && !env.VERCEL && env.NODE_ENV !== "production";
+}
+
+/** Vale em `dev`, `build` e `start`; ver `resolverUsarMocks`. */
+export const USAR_MOCKS = resolverUsarMocks(process.env);
 
 /**
  * O mínimo que o app exige para subir. Não são segredos: são marcadores de

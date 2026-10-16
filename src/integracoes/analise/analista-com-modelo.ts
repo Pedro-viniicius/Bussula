@@ -33,7 +33,7 @@ import type {
   PossivelAcao,
 } from "@/dominio/analise/tipos";
 import { manterSoOSustentado } from "@/dominio/analise/validacao";
-import { DESCRICAO_DO_TIPO } from "@/dominio/formularios/perguntas";
+import { DESCRICAO_DO_TIPO, semDadosPessoais } from "@/dominio/formularios/perguntas";
 import { MARCA } from "@/lib/marca";
 import type { ChamadaAoModelo, PedidoAoModelo } from "./gateway-de-ia";
 
@@ -109,7 +109,7 @@ export function montarPedido(entrada: EntradaDaAnalise, analiseDasRegras: Analis
       objetivo: entrada.formulario.objetivo,
       totalDeRespostas: entrada.resultados.resumo.totalDeRespostas,
     },
-    perguntas: entrada.perguntas.map((pergunta) => ({
+    perguntas: semDadosPessoais(entrada.perguntas).map((pergunta) => ({
       enunciado: pergunta.enunciado,
       tipo: DESCRICAO_DO_TIPO[pergunta.tipo].rotulo,
       opcoes: pergunta.opcoes,

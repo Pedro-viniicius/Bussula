@@ -1,5 +1,5 @@
 {
-  "name": "fiat-mvp",
+  "name": "bussola",
   "version": "2.0.0",
   "private": true,
   "scripts": {
@@ -13,6 +13,8 @@
     "vercel-build": "sh scripts/vercel-build.sh",
     "db:whoami": "tsx scripts/db-whoami.ts",
     "db:whoami:prod": "sh scripts/prod.sh scripts/db-whoami.ts",
+    "formularios:publicar": "tsx scripts/publicar-formularios.ts",
+    "formularios:publicar:prod": "sh scripts/prod.sh scripts/publicar-formularios.ts",
     "totp:enroll": "tsx scripts/totp-enroll.ts",
     "totp:code": "tsx scripts/totp-code.ts",
     "typecheck": "tsc --noEmit -p .",
@@ -24,7 +26,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.45.0",
-    "next": "16.3.5",
+    "next": "16.3.8",
     "pg": "^8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -39,7 +41,7 @@
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
-    "eslint-config-next": "16.3.5",
+    "eslint-config-next": "16.3.8",
     "qrcode-terminal": "0.12.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",

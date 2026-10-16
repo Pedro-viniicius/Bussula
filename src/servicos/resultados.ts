@@ -12,12 +12,13 @@
  */
 import { analisarPorRegras } from "@/dominio/analise/analista-por-regras";
 import type { AnaliseDosResultados, EntradaDaAnalise } from "@/dominio/analise/tipos";
+import { semDadosPessoais } from "@/dominio/formularios/perguntas";
 import type { FormularioComPerguntas } from "@/dominio/formularios/tipos";
 import type { Resposta } from "@/dominio/respostas/tipos";
 import { calcularResultados } from "@/dominio/resultados/metricas";
 import type { ResultadosDoFormulario } from "@/dominio/resultados/tipos";
 import { escolherAnalista } from "@/integracoes/analise";
-import { log } from "@/lib/logger";
+import { log, resumoDoErro } from "@/lib/logger";
 import { respostasGravadas } from "@/repositorios";
 import { buscarFormularioPorId } from "./formularios";
 
@@ -32,8 +33,10 @@ export async function buscarResultadosDoFormulario(
   formularioId: string,
   agora: Date = new Date(),
 ): Promise<DadosDosResultados | null> {
-  const formulario = await buscarFormularioPorId(formularioId);
-  if (!formulario) return null;
+  const completo = await buscarFormularioPorId(formularioId);
+  if (!completo) return null;
+  // Dado pessoal não entra em conta, gráfico nem análise.
+  const formulario = { ...completo, perguntas: semDadosPessoais(completo.perguntas) };
 
   const respostas = await respostasGravadas.doFormulario(formulario.id);
   const resultados = calcularResultados(formulario.perguntas, respostas, agora);
@@ -53,7 +56,7 @@ export async function analisarResultados(dados: DadosDosResultados): Promise<Ana
   } catch (erro) {
     log.warn("análise com modelo indisponível; usando as regras fixas", {
       formularioId: dados.formulario.id,
-      motivo: erro instanceof Error ? erro.message : String(erro),
+      ...resumoDoErro(erro),
     });
     return analisarPorRegras(entrada);
   }

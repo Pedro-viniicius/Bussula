@@ -24,11 +24,42 @@ export function podeEnviar(estado: EstadoDoEnvio): boolean {
  * nisso que a fila offline se apoia para decidir o que guardar.
  */
 export type ResultadoDoEnvio =
-  | { ok: true; jaEstavaRegistrada: boolean }
+  | {
+      ok: true;
+      jaEstavaRegistrada: boolean;
+      /**
+       * A rota sempre envia o objeto (com os dois campos nulos quando nada foi
+       * rendido). Ausente ou nulo vale como nenhum benefício: itens antigos da fila.
+       */
+      beneficios?: BeneficiosDoEnvio | null;
+    }
   | {
       ok: false;
       erro: string;
       mensagem: string;
       /** Erro por pergunta, quando a recusa foi de validação. */
       porPergunta?: Record<string, string>;
+      /** No limite por IP (HTTP 429): quanto esperar antes de tentar de novo. */
+      tenteDeNovoEmSegundos?: number;
     };
+
+/**
+ * O que o envio rendeu à pessoa. O código do cupom sai UMA vez, em `emitido`:
+ * nunca em `ja_emitido` nem quando a mesma chave é reenviada.
+ */
+export type BeneficiosDoEnvio = {
+  cupom:
+    | {
+        status: "emitido";
+        codigo: string;
+        textoDoBrinde: string | null;
+        /** Data `AAAA-MM-DD` no fuso da loja. */
+        validoAte: string;
+      }
+    /** Sem código e sem validade, sempre. */
+    | { status: "ja_emitido" }
+    | { status: "falhou" }
+    /** Módulo desligado, ou a pessoa pulou o WhatsApp. */
+    | null;
+  indicacao: { codigo: string; slugDestino: string } | null;
+};

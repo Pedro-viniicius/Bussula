@@ -5,14 +5,22 @@
  * partir destas linhas na hora da consulta. Assim não existe indicador que
  * possa ficar defasado em relação ao que os clientes responderam.
  */
-import { count, desc, eq, gte, max, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, isNotNull, lt, max, min, sql } from "drizzle-orm";
 import { FUSO_HORARIO } from "@/dominio/constantes";
+import { ConflitoDeContato } from "@/dominio/contatos/repositorio";
+import type { ContatoGravado } from "@/dominio/contatos/tipos";
 import type { PontoDaSerie } from "@/dominio/dashboard/tipos";
 import type { ValorDaResposta } from "@/dominio/formularios/perguntas";
 import type { RepositorioDeRespostas, TotalDoFormulario } from "@/dominio/respostas/repositorio";
 import type { OrigemDaResposta, Resposta } from "@/dominio/respostas/tipos";
 import { db } from "@/lib/db";
-import { respostas, type RespostaGravada } from "@/lib/db/schema";
+import {
+  consentimentosContato,
+  contatos,
+  respostas,
+  type ContatoGravadoNoBanco,
+  type RespostaGravada,
+} from "@/lib/db/schema";
 
 function paraDominio(linha: RespostaGravada): Resposta {
   return {
@@ -25,30 +33,133 @@ function paraDominio(linha: RespostaGravada): Resposta {
   };
 }
 
+function paraContatoGravado(linha: ContatoGravadoNoBanco | undefined): ContatoGravado | null {
+  if (!linha) return null;
+  return {
+    id: linha.id,
+    cupom: linha.cupom,
+    cupomExpiraEm: linha.cupomExpiraEm,
+    codigoIndicacao: linha.codigoIndicacao,
+  };
+}
+
+/**
+ * Traduz a violação de unicidade do Postgres (23505) na que o serviço
+ * entende. Qualquer outro erro segue como está (vira 5xx e a fila tenta de novo).
+ */
+function traduzirConflito(erro: unknown): unknown {
+  // O drizzle embrulha o erro do driver; o código e a restrição ficam em `cause`.
+  const original = (erro as { cause?: unknown })?.cause ?? erro;
+  const { code, constraint } = (original ?? {}) as { code?: string; constraint?: string };
+  if (code !== "23505") return erro;
+  if (constraint === "contatos_cupom_por_telefone_uk") return new ConflitoDeContato("cupom_do_telefone");
+  if (constraint === "contatos_cupom_unique" || constraint === "contatos_codigo_indicacao_unique") {
+    return new ConflitoDeContato("codigo");
+  }
+  return erro;
+}
+
 export const repositorioDeRespostasNoBanco: RepositorioDeRespostas = {
   async gravar(entrada) {
-    // O índice único em chave_envio é quem garante a idempotência: duas
-    // requisições iguais disputam a mesma linha e só uma vence.
-    const [gravada] = await db
-      .insert(respostas)
-      .values({
-        formularioId: entrada.formularioId,
-        versaoFormulario: entrada.versaoFormulario,
-        chaveEnvio: entrada.chaveEnvio,
-        valores: entrada.valores,
-        origem: entrada.origem,
-      })
-      .onConflictDoNothing({ target: respostas.chaveEnvio })
-      .returning();
+    try {
+      // Resposta, contato e consentimentos na mesma transação: ou entra tudo ou nada.
+      return await db.transaction(async (tx) => {
+        // O índice único em chave_envio é quem garante a idempotência: duas
+        // requisições iguais disputam a mesma linha e só uma vence.
+        const [gravada] = await tx
+          .insert(respostas)
+          .values({
+            formularioId: entrada.formularioId,
+            versaoFormulario: entrada.versaoFormulario,
+            chaveEnvio: entrada.chaveEnvio,
+            valores: entrada.valores,
+            origem: entrada.origem,
+            ipHash: entrada.ipHash,
+          })
+          .onConflictDoNothing({ target: respostas.chaveEnvio })
+          .returning();
 
-    if (gravada) return { resposta: paraDominio(gravada), duplicada: false };
+        if (!gravada) {
+          const [existente] = await tx
+            .select()
+            .from(respostas)
+            .where(eq(respostas.chaveEnvio, entrada.chaveEnvio))
+            .limit(1);
+          const [contatoExistente] = await tx
+            .select()
+            .from(contatos)
+            .where(eq(contatos.respostaId, existente.id))
+            .limit(1);
+          return {
+            resposta: paraDominio(existente),
+            duplicada: true,
+            contato: paraContatoGravado(contatoExistente),
+          };
+        }
 
-    const [existente] = await db
-      .select()
+        let contato: ContatoGravado | null = null;
+        if (entrada.contato) {
+          const c = entrada.contato;
+          const [linha] = await tx
+            .insert(contatos)
+            .values({
+              respostaId: gravada.id,
+              formularioId: entrada.formularioId,
+              nome: c.nome,
+              telefone: c.telefone,
+              cupom: c.cupom?.codigo ?? null,
+              cupomBrinde: c.cupom?.brinde ?? null,
+              cupomExpiraEm: c.cupom?.expiraEm ?? null,
+              codigoIndicacao: c.codigoIndicacao,
+              indicadoPor: c.indicadoPor,
+            })
+            .returning();
+          if (c.versaoDoConsentimento && c.consentimentos.length > 0) {
+            await tx.insert(consentimentosContato).values(
+              c.consentimentos.map((item) => ({
+                contatoId: linha.id,
+                finalidade: item.finalidade,
+                concedido: item.concedido,
+                textoVersao: c.versaoDoConsentimento!,
+              })),
+            );
+          }
+          contato = paraContatoGravado(linha);
+        }
+
+        return { resposta: paraDominio(gravada), duplicada: false, contato };
+      });
+    } catch (erro) {
+      throw traduzirConflito(erro);
+    }
+  },
+
+  async buscarPorChave(chaveEnvio) {
+    const [linha] = await db.select().from(respostas).where(eq(respostas.chaveEnvio, chaveEnvio)).limit(1);
+    if (!linha) return null;
+    const [contato] = await db.select().from(contatos).where(eq(contatos.respostaId, linha.id)).limit(1);
+    return {
+      resposta: paraDominio(linha),
+      contato: paraContatoGravado(contato),
+      telefoneDoContato: contato?.telefone ?? null,
+    };
+  },
+
+  async contarPorIp(ipHash, desde) {
+    const [linha] = await db
+      .select({ total: count(), maisAntigaEm: min(respostas.criadoEm) })
       .from(respostas)
-      .where(eq(respostas.chaveEnvio, entrada.chaveEnvio))
-      .limit(1);
-    return { resposta: paraDominio(existente), duplicada: true };
+      .where(and(eq(respostas.ipHash, ipHash), gte(respostas.criadoEm, desde)));
+    return { total: linha?.total ?? 0, maisAntigaEm: linha?.maisAntigaEm ?? null };
+  },
+
+  async limparIpsAntigos(antesDe) {
+    const limpas = await db
+      .update(respostas)
+      .set({ ipHash: null })
+      .where(and(isNotNull(respostas.ipHash), lt(respostas.criadoEm, antesDe)))
+      .returning({ id: respostas.id });
+    return limpas.length;
   },
 
   async listar({ formularioId, pagina, porPagina }) {

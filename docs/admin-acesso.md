@@ -11,7 +11,7 @@ Quem administra o sistema tem a chave `ADMIN_TOTP_SECRET`. Com ela em mãos:
 1. Instale um aplicativo autenticador no celular.
 2. Toque em **Adicionar conta**.
 3. Escolha **Inserir chave manualmente** (ou "chave de configuração").
-4. Nome: `Fiat Day`.
+4. Nome: `Essencial Fit`.
 5. Chave: cole o valor de `ADMIN_TOTP_SECRET`.
 6. Tipo: **baseado em tempo**.
 
@@ -26,7 +26,7 @@ chave (veja "Gerar uma nova configuração" abaixo).
 1. Abra `/admin`.
 2. Digite a senha.
 3. Abra o aplicativo autenticador.
-4. Digite os 6 números que aparecem em "Fiat Day".
+4. Digite os 6 números que aparecem em "Essencial Fit".
 5. Toque em **Entrar**.
 
 A sessão dura 12 horas. **Sair** encerra na hora. A mensagem "Senha ou código

@@ -1,9 +1,19 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { MAIOR_NOTA_DA_AVALIACAO, type Pergunta, type ValorDaResposta } from "@/dominio/formularios/perguntas";
 import { FORMULARIO_PUBLICO as T } from "@/lib/texts/publico";
 import { cn } from "@/lib/utils";
+import { mascararTelefone } from "@/lib/validation/phone";
+
+const EXEMPLO_DE_WHATSAPP = "(35) 99999-8888";
+
+/**
+ * A spec pede 15, mas um número colado com "+55 35 99999-8888" tem 17
+ * caracteres: o navegador cortaria a colagem antes da máscara tirar o 55.
+ */
+const MAIOR_WHATSAPP_DIGITADO = 20;
 
 /**
  * Uma pergunta na tela de quem responde.
@@ -26,11 +36,24 @@ export function PerguntaPublica({
   aoResponder: (valor: ValorDaResposta, respostaDefinitiva: boolean) => void;
 }) {
   const idErro = `erro-${pergunta.id}`;
+  const titulo = useRef<HTMLHeadingElement>(null);
+
+  // A tela é remontada a cada pergunta: o foco vai ao título para o leitor de
+  // tela anunciar a nova pergunta. Campos de texto já têm `autoFocus` e ficam com ele.
+  const ficaComAutoFoco = ["texto_curto", "texto_livre", "whatsapp", "nome"].includes(pergunta.tipo);
+  useEffect(() => {
+    if (!ficaComAutoFoco) titulo.current?.focus({ preventScroll: true });
+  }, [ficaComAutoFoco]);
+
   const descrito = erro ? idErro : pergunta.ajuda ? `ajuda-${pergunta.id}` : undefined;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-3xl">{pergunta.enunciado}</h1>
+      <h1
+        ref={titulo}
+        tabIndex={-1}
+        className="text-2xl font-bold tracking-tight text-balance outline-none sm:text-3xl"
+      >{pergunta.enunciado}</h1>
       {pergunta.ajuda && (
         <p id={`ajuda-${pergunta.id}`} className="mt-2 text-muted-foreground">
           {pergunta.ajuda}
@@ -135,6 +158,37 @@ export function PerguntaPublica({
             onChange={(e) => aoResponder(e.target.value, false)}
             aria-invalid={erro ? true : undefined}
             aria-label={pergunta.enunciado}
+          />
+        )}
+
+        {pergunta.tipo === "whatsapp" && (
+          <Input
+            autoFocus
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel-national"
+            maxLength={MAIOR_WHATSAPP_DIGITADO}
+            placeholder={EXEMPLO_DE_WHATSAPP}
+            value={typeof valor === "string" ? valor : ""}
+            onChange={(e) => aoResponder(mascararTelefone(e.target.value), false)}
+            aria-invalid={erro ? true : undefined}
+            aria-describedby={descrito}
+            aria-label={pergunta.enunciado}
+            className="h-14 text-xl tabular-nums"
+          />
+        )}
+
+        {pergunta.tipo === "nome" && (
+          <Input
+            autoFocus
+            type="text"
+            autoComplete="name"
+            value={typeof valor === "string" ? valor : ""}
+            onChange={(e) => aoResponder(e.target.value, false)}
+            aria-invalid={erro ? true : undefined}
+            aria-describedby={descrito}
+            aria-label={pergunta.enunciado}
+            className="h-14"
           />
         )}
 

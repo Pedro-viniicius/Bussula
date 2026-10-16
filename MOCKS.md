@@ -33,9 +33,11 @@ sobrescreve o que você definiu.
 | Acesso | `/` | A porta de entrada do sistema |
 | Login do painel | `/admin/login` | Botão **Entrar como usuário de teste** (ou qualquer senha e qualquer código) |
 | Visão Geral | `/admin` | Indicadores, sinais, respostas por dia e respostas recentes |
-| Formulários | `/admin/formularios` | Os três formulários, situação, link público, desativar e arquivar |
+| Formulários | `/admin/formularios` | Os quatro formulários, situação, link público, desativar e arquivar |
+| Contatos | `/admin/contatos` | Contatos fictícios do "Cadastro no balcão": nome e telefone escondidos, revelar, cupom, indicações e exportação em CSV |
 | Resultados & IA | `/admin/resultados` | Dados, análise, possíveis ações e respostas uma a uma, por formulário |
 | Formulário público | `/f/experiencia-na-loja` | Cinco perguntas, uma por vez, envio e confirmação |
+| Cadastro com cupom | `/f/cadastro-no-balcao` | Pergunta, nome, WhatsApp, consentimento e a tela com o cupom fictício e o link de indicação |
 | Formulário pausado | `/f/pos-venda` | O aviso que o cliente vê quando o formulário não está ativo |
 | Endereço inexistente | `/f/nao-existe` | O aviso de formulário não encontrado |
 | Privacidade | `/privacidade` | Texto da política |
@@ -53,11 +55,13 @@ sobrescreve o que você definiu.
 A troca acontece num arquivo só, `src/repositorios/index.ts`: ele escolhe a
 implementação e os serviços nunca perguntam qual está em uso.
 
-Os dados de exemplo são os três formulários incluídos no serviço —
-"Experiência na loja" (ativo, na versão 2), "Interesse em suplementos" (ativo)
-e "Pós-venda" (em preparação) — e 123 respostas espalhadas pelos últimos 14
-dias. O
-sorteio usa semente fixa, então a história é a mesma a cada execução; as datas
+Os dados de exemplo são quatro formulários — "Experiência na loja" (ativo, na
+versão 2), "Interesse em suplementos" (ativo), "Pós-venda" (em preparação) e
+"Cadastro no balcão" (ativo, com cupom e indicação) — e 135 respostas: 123
+espalhadas pelos últimos 14 dias nos três primeiros e 12 do "Cadastro no
+balcão" nos últimos cinco dias. O "Cadastro no balcão" é **fictício**: o nome
+e o telefone dos contatos, os cupons e o brinde ("Brinde de exemplo") não
+existem de verdade. O sorteio usa semente fixa, então a história é a mesma a cada execução; as datas
 são relativas ao momento em que o servidor sobe, para "respostas hoje" e
 "última resposta há 4 min" mostrarem alguma coisa em qualquer dia.
 
@@ -78,7 +82,8 @@ Ao reiniciar, tudo volta ao estado inicial.
    | --- | --- | --- |
    | `DATABASE_URL` | Conexão do Neon (endpoint com pool) | Nada que toque o banco funciona |
    | `NEXT_PUBLIC_SITE_URL` | Endereço canônico nos metadados das páginas | Cai em `http://localhost:3000` |
-   | `IP_HASH_SALT` | Hash do IP no freio de força bruta do login (`openssl rand -hex 32`) | O freio passa a contar por tentativa global, não por IP |
+   | `IP_HASH_SALT` | Hash do IP no freio do login **e no limite de envios por IP** (`openssl rand -hex 32`). **Obrigatório em produção** | O freio do login conta por tentativa global; o limite de envios fica desligado e o servidor registra um erro |
+   | `LIMITE_POR_MINUTO`, `LIMITE_POR_HORA` | Quantas respostas uma mesma rede pode enviar (padrões 20 e 200). Opcionais | Valem os padrões |
    | `SESSION_SECRET` | Assina o cookie do `/admin` (32+ caracteres) | O login não abre |
    | `ADMIN_PASSWORD` | Senha do painel (16+ caracteres) | O login não abre |
    | `ADMIN_TOTP_SECRET` | Chave do autenticador (`pnpm totp:enroll`) | O login não abre |
@@ -90,9 +95,15 @@ Ao reiniciar, tudo volta ao estado inicial.
    ```
 
    Não há seed: o painel abre com o estado vazio. Os formulários não são
-   criados pelo painel — quem cuida do sistema os grava com as funções de
-   `src/servicos/formularios.ts` (`criarFormulario`, `publicarFormulario`),
-   que continuam com todas as validações.
+   criados pelo painel — quem cuida do sistema os publica a partir de um
+   arquivo com `pnpm formularios:publicar config/formularios/<arquivo>.json`
+   (simulação; `--aplicar` grava), que passa por todas as validações. Veja o
+   README.
+
+   Em **produção** de verdade (modo de teste desligado), um formulário que pede
+   nome ou WhatsApp **não abre** enquanto os dados da empresa responsável
+   (`CONTROLADOR`, em `src/lib/marca.ts`) estiverem vazios. No modo de teste
+   essa trava não existe, para dar para ver as telas.
 
 Num deploy na Vercel o modo de teste já fica desligado sozinho, mesmo com
 `PADRAO = true`: a variável `VERCEL` denuncia o ambiente e o painel nunca sobe
@@ -114,8 +125,8 @@ Três coisas para saber antes:
   própria memória: um cadastro feito numa requisição pode não aparecer na
   seguinte, e some a cada instância reciclada. Serve para demonstrar as telas,
   não para receber cadastro de verdade.
-- **Os números são sempre os mesmos.** É a semente fixa: os mesmos três
-  formulários e as mesmas 123 respostas. Bom para apresentar, inútil como
+- **Os números são sempre os mesmos.** É a semente fixa: os mesmos quatro
+  formulários e as mesmas 135 respostas. Bom para apresentar, inútil como
   relatório.
 
 Para voltar a publicar de verdade, remova `USAR_MOCKS` das variáveis da Vercel.

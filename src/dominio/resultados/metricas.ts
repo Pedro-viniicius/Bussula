@@ -12,7 +12,7 @@
  */
 import { DIAS_PERIODO_PADRAO } from "@/dominio/constantes";
 import type { PontoDaSerie } from "@/dominio/dashboard/tipos";
-import { limitesDaNota, type Pergunta, type ValorDaResposta } from "@/dominio/formularios/perguntas";
+import { limitesDaNota, semDadosPessoais, type Pergunta, type ValorDaResposta } from "@/dominio/formularios/perguntas";
 import { ORIGENS_DA_RESPOSTA, ROTULO_DA_ORIGEM, type Resposta } from "@/dominio/respostas/tipos";
 import { diasEntre, inicioDeDiasAtras, inicioDeHoje, inicioDoDia } from "@/utilitarios/tempo";
 import type {
@@ -105,7 +105,8 @@ export function contarOrigens(respostas: Resposta[]): OrigemContada[] {
  * guardado, só não tem onde ser mostrado aqui.
  */
 export function calcularDistribuicoes(perguntas: Pergunta[], respostas: Resposta[]): DistribuicaoDaPergunta[] {
-  return perguntas.map((pergunta) => resumirPergunta(pergunta, respostas));
+  // Dado pessoal (WhatsApp, nome) não entra em conta nem em gráfico.
+  return semDadosPessoais(perguntas).map((pergunta) => resumirPergunta(pergunta, respostas));
 }
 
 function resumirPergunta(pergunta: Pergunta, respostas: Resposta[]): DistribuicaoDaPergunta {
@@ -158,6 +159,11 @@ function resumirPergunta(pergunta: Pergunta, respostas: Resposta[]): Distribuica
         .filter((texto) => texto.trim() !== "")
         .slice(0, TEXTOS_MOSTRADOS_POR_PERGUNTA);
       return distribuicao;
+
+    case "whatsapp":
+    case "nome":
+      // Nunca chega aqui (filtrado acima); se chegar, não resume nada.
+      return { ...distribuicao, totalDeRespostas: 0 };
   }
 }
 

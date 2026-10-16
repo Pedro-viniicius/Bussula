@@ -1,10 +1,18 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { Marca } from "@/components/marca";
+import { Conclusao } from "@/components/conclusao/conclusao";
 import { SwRegister } from "@/components/sw-register";
-import { CONCLUIDO } from "@/lib/texts/publico";
 import { MARCA } from "@/lib/marca";
+import { TituloDaAba } from "./titulo-da-aba";
 
+/**
+ * Renderizada por requisição, de propósito. O `proxy.ts` põe um CSP com nonce
+ * (`script-src 'nonce-…' 'strict-dynamic'`) e o Next só carimba o nonce nos
+ * scripts ao renderizar com a requisição em mãos. Uma página estática sai sem
+ * nonce: numa carga direta o navegador bloqueia todos os scripts e a tela,
+ * renderizada no cliente, fica em branco. Offline, o service worker devolve a
+ * cópia guardada da última resposta, que leva seu próprio CSP e seu nonce.
+ */
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -13,31 +21,21 @@ export const metadata: Metadata = {
 };
 
 /**
- * A confirmação. Deliberadamente sem consulta ao banco: esta tela precisa
- * abrir mesmo quando a resposta ainda está na fila do aparelho, esperando a
- * conexão voltar.
+ * A confirmação. Deliberadamente sem consulta ao banco e sem ler a URL no
+ * servidor: o conteúdo variável (cupom, indicação, envio guardado) vive no
+ * navegador, então a página é a mesma para todo mundo e abre mesmo quando a
+ * resposta ainda está na fila do aparelho, esperando a conexão voltar. O
+ * título da aba é o genérico até o navegador ler o registro (`TituloDaAba`).
  */
-export default async function RespostaConcluidaPage({ searchParams }: PageProps<"/resposta/concluida">) {
-  const consulta = await searchParams;
-  const aguardandoConexao = consulta.guardada === "1";
-
+export default function RespostaConcluidaPage() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center bg-background px-6 py-10 text-center">
-      <Marca className="mb-10" />
-      <div className="anim-surgir">
-        <p aria-hidden className="text-5xl">
-          ✓
-        </p>
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-balance sm:text-3xl">{CONCLUIDO.titulo}</h1>
-        <p className="mt-3 max-w-sm text-muted-foreground">
-          {aguardandoConexao ? CONCLUIDO.guardada : CONCLUIDO.texto}
-        </p>
-        <p className="mt-6 text-sm text-muted-foreground">{CONCLUIDO.fechar}</p>
-      </div>
-      {/* Mantém a fila sendo reprocessada enquanto esta tela estiver aberta. */}
+    <>
       <Suspense>
-        <SwRegister slug="" />
+        <Conclusao />
+        <TituloDaAba />
       </Suspense>
-    </main>
+      {/* Mantém a fila sendo reprocessada enquanto esta tela estiver aberta. */}
+      <SwRegister />
+    </>
   );
 }

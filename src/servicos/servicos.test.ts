@@ -1,8 +1,9 @@
 /**
  * Testes de caracterização dos serviços do painel.
  *
- * Rodam contra os dados fictícios do modo de teste (três formulários e 123
- * respostas sorteadas com semente fixa) e fixam o comportamento que já
+ * Rodam contra os dados fictícios do modo de teste (quatro formulários e 135
+ * respostas sorteadas com semente fixa: 123 dos três primeiros, que não mudam,
+ * e 12 do "Cadastro no balcão", gerados depois com semente própria) e fixam o comportamento que já
  * existia antes da reorganização do painel: a listagem de formulários, os
  * números da visão geral, as respostas e a coleta pública. Se algum destes
  * testes quebrar, alguma coisa que funcionava deixou de funcionar.
@@ -14,18 +15,36 @@ import { carregarResumoDoDashboard, carregarSerieDeRespostas, detectarSinais } f
 import { buscarFormularioPorId, listarFormularios } from "./formularios";
 import { buscarRespostasRecentes, comPerguntas, listarRespostas, registrarResposta } from "./respostas";
 import { analisarResultados, buscarResultadosDoFormulario } from "./resultados";
-import type { FormularioNaLista } from "../dominio/formularios/tipos";
+import { MODULOS_DESLIGADOS } from "../dominio/formularios/modulos";
+import { CONFIGURACAO_DA_LOJA_PADRAO, type FormularioNaLista } from "../dominio/formularios/tipos";
 
-const TOTAL_DE_RESPOSTAS_FICTICIAS = 123;
+/** As 123 respostas dos três formulários originais, que o quarto formulário não altera. */
+const RESPOSTAS_DOS_TRES_FORMULARIOS_ORIGINAIS = 123;
+/** As respostas do "Cadastro no balcão" (soma de `BALCAO_POR_DIA`). */
+const RESPOSTAS_DO_CADASTRO_NO_BALCAO = 12;
+const TOTAL_DE_RESPOSTAS_FICTICIAS =
+  RESPOSTAS_DOS_TRES_FORMULARIOS_ORIGINAIS + RESPOSTAS_DO_CADASTRO_NO_BALCAO;
+const FORMULARIOS_ATIVOS_FICTICIOS = 3;
 const EXPERIENCIA_NA_LOJA = "form-experiencia-na-loja";
 const INTERESSE_EM_SUPLEMENTOS = "form-interesse-suplementos";
 const POS_VENDA = "form-pos-venda";
+const CADASTRO_NO_BALCAO = "form-cadastro-no-balcao";
 
 describe("formulários disponíveis", () => {
-  it("lista os três formulários, do mais recente para o mais antigo", async () => {
+  it("lista os quatro formulários, do mais recente para o mais antigo", async () => {
     const formularios = await listarFormularios();
     const identificadores = formularios.map((formulario) => formulario.id);
-    assert.deepEqual(identificadores, [POS_VENDA, INTERESSE_EM_SUPLEMENTOS, EXPERIENCIA_NA_LOJA]);
+    assert.deepEqual(identificadores, [POS_VENDA, CADASTRO_NO_BALCAO, INTERESSE_EM_SUPLEMENTOS, EXPERIENCIA_NA_LOJA]);
+  });
+
+  it("mantém as respostas dos três formulários originais exatamente como eram", async () => {
+    const formularios = await listarFormularios();
+    const dosOriginais = formularios
+      .filter((formulario) => formulario.id !== CADASTRO_NO_BALCAO)
+      .reduce((soma, formulario) => soma + formulario.totalDeRespostas, 0);
+    assert.equal(dosOriginais, RESPOSTAS_DOS_TRES_FORMULARIOS_ORIGINAIS);
+    const balcao = formularios.find((formulario) => formulario.id === CADASTRO_NO_BALCAO);
+    assert.equal(balcao?.totalDeRespostas, RESPOSTAS_DO_CADASTRO_NO_BALCAO);
   });
 
   it("soma as respostas de cada formulário sem perder nenhuma", async () => {
@@ -53,7 +72,7 @@ describe("números da visão geral", () => {
   it("conta todas as respostas, os formulários ativos e o mais respondido", async () => {
     const resumo = await carregarResumoDoDashboard();
     assert.equal(resumo.totalDeRespostas, TOTAL_DE_RESPOSTAS_FICTICIAS);
-    assert.equal(resumo.formulariosAtivos, 2);
+    assert.equal(resumo.formulariosAtivos, FORMULARIOS_ATIVOS_FICTICIOS);
     assert.ok(resumo.ultimaRespostaEm instanceof Date);
     assert.equal(resumo.formularioMaisRespondido?.id, EXPERIENCIA_NA_LOJA);
     assert.ok(resumo.respostasHoje <= resumo.respostasNoPeriodo);
@@ -81,8 +100,12 @@ describe("sinais da visão geral", () => {
       versaoAtual: 1,
       criadoEm: agora,
       atualizadoEm: agora,
+      configuracaoDaLoja: { ...CONFIGURACAO_DA_LOJA_PADRAO },
       totalDeRespostas: 10,
       ultimaRespostaEm: agora,
+      modulos: { ...MODULOS_DESLIGADOS },
+      pedeDadosPessoais: false,
+      travado: false,
       ...parcial,
     };
   }
@@ -147,10 +170,10 @@ describe("coleta pública de respostas", () => {
     const envio = { slug: "interesse-em-suplementos", chaveEnvio, valores: respostaValida, origem: "nfc" as const };
 
     const primeiro = await registrarResposta(envio);
-    assert.deepEqual(primeiro, { ok: true, valor: { jaEstavaRegistrada: false } });
+    assert.deepEqual(primeiro, { ok: true, valor: { jaEstavaRegistrada: false, beneficios: { cupom: null, indicacao: null } } });
 
     const repetido = await registrarResposta(envio);
-    assert.deepEqual(repetido, { ok: true, valor: { jaEstavaRegistrada: true } });
+    assert.deepEqual(repetido, { ok: true, valor: { jaEstavaRegistrada: true, beneficios: { cupom: null, indicacao: null } } });
   });
 
   it("recusa formulário que ainda não está no ar", async () => {
@@ -187,8 +210,12 @@ describe("queda da coleta na visão geral", () => {
     versaoAtual: 1,
     criadoEm: agora,
     atualizadoEm: agora,
+    configuracaoDaLoja: { ...CONFIGURACAO_DA_LOJA_PADRAO },
     totalDeRespostas: 50,
     ultimaRespostaEm: agora,
+    modulos: { ...MODULOS_DESLIGADOS },
+    pedeDadosPessoais: false,
+    travado: false,
   };
 
   it("avisa quando a coleta cai de verdade", () => {
